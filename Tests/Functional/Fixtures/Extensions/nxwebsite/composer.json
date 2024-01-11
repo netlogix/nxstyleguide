@@ -1,0 +1,11 @@
+{
+  "name": "netlogix/nxwebsite",
+  "type": "typo3-cms-extension",
+  "description": "fictional website extension",
+  "version": "1.0.0",
+  "extra": {
+    "typo3/cms": {
+      "extension-key": "nxwebsite"
+    }
+  }
+}
