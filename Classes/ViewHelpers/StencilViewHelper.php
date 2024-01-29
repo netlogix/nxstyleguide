@@ -4,6 +4,12 @@ declare(strict_types=1);
 
 namespace Netlogix\Nxstyleguide\ViewHelpers;
 
+use InvalidArgumentException;
+use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Message\UriInterface;
+use TYPO3\CMS\Core\Core\Environment;
+use TYPO3\CMS\Core\Http\Uri;
+use TYPO3\CMS\Core\Site\Entity\Site;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Utility\PathUtility;
 use TYPO3Fluid\Fluid\Core\ViewHelper\AbstractTagBasedViewHelper;
@@ -33,10 +39,10 @@ class StencilViewHelper extends AbstractTagBasedViewHelper
         $namespace = trim((string) $this->arguments['stencilNamespace']);
         $resourcesUrl = rtrim(trim((string) $this->arguments['resourcesUrl']), '/') . '/';
 
-        $javaScriptContent = (string) GeneralUtility::getUrl(
-            GeneralUtility::getFileAbsFileName($resourcesUrl . $namespace . '.esm.js')
+        $javaScriptContent = (string) $this->getUrl(
+            $this->getAbsoluteWebPath($resourcesUrl . $namespace . '.esm.js', true)
         );
-        $assetUrl = PathUtility::getAbsoluteWebPath(GeneralUtility::getFileAbsFileName($resourcesUrl));
+        $assetUrl = rtrim(trim($this->getAbsoluteWebPath($resourcesUrl)), '/') . '/';
 
         $filesToPreload = [];
         $javaScriptContent = preg_replace_callback(
@@ -61,13 +67,19 @@ class StencilViewHelper extends AbstractTagBasedViewHelper
             $javaScriptContent
         );
 
+        $javaScriptContent = str_replace(
+            'sourceMappingURL=',
+            sprintf('sourceMappingURL=%s', $assetUrl),
+            $javaScriptContent
+        );
+
         $result .= implode(
-            PHP_EOL,
-            array_map(
-                fn ($fileUri) => "<link href=\"$fileUri\" rel=\"modulepreload\" />",
-                array_unique($filesToPreload)
-            )
-        ) . PHP_EOL;
+                PHP_EOL,
+                array_map(
+                    fn ($fileUri) => sprintf('<link href="%s" rel="modulepreload" />', $this->getAbsoluteWebPath($fileUri)),
+                    array_unique($filesToPreload)
+                )
+            ) . PHP_EOL;
 
         $this->tag->addAttribute('type', 'module');
         $this->tag->addAttribute('data-resources-url', $assetUrl);
@@ -79,23 +91,57 @@ class StencilViewHelper extends AbstractTagBasedViewHelper
         $this->tag->reset();
         $this->tag->setTagName($this->tagName);
         $this->tag->addAttribute('nomodule', '');
-        $this->tag->addAttribute('src', $this->getAbsoluteWebPath($resourcesUrl . $namespace . '.js'));
+        $this->tag->addAttribute('src', $this->getAbsoluteWebPath($resourcesUrl . $namespace . '.js', true));
         $this->tag->forceClosingTag(true);
         $result .= $this->tag->render() . PHP_EOL;
 
         return $result;
     }
 
-    private function getAbsoluteWebPath(string $file): string
+    protected function getUrl(string $url): ?string
     {
-        // @codeCoverageIgnoreStart
-        if (PathUtility::hasProtocolAndScheme($file)) {
-            return $file;
+        return GeneralUtility::getUrl($url) ?? null;
+    }
+
+    private function getAbsoluteWebPath($file, $cacheBreaker = false): string
+    {
+        if (PathUtility::isExtensionPath($file)) {
+            $file = Environment::getPublicPath() . '/' . PathUtility::getPublicResourceWebPath($file, false);
+            // as the path is now absolute, make it "relative" to the current script to stay compatible
+            $file = PathUtility::getRelativePathTo($file) ?? '';
+            $file = rtrim($file, '/');
+        } else {
+            $file = GeneralUtility::resolveBackPath($file);
         }
-        // @codeCoverageIgnoreEnd
 
-        $file = PathUtility::getAbsoluteWebPath(GeneralUtility::getFileAbsFileName($file));
+        if ($cacheBreaker) {
+            $file = GeneralUtility::createVersionNumberedFilename($file);
+        }
 
-        return GeneralUtility::createVersionNumberedFilename($file);
+        $file = PathUtility::getAbsoluteWebPath($file);
+
+        $baseUri = $this->getBaseUri();
+
+        return (string) (new Uri($file))
+            ->withScheme('https')
+            ->withHost($baseUri->getHost());
+    }
+
+    public function getBaseUri(): UriInterface
+    {
+        $request = $this->getRequest();
+        $site = $request->getAttribute('site');
+        assert($site instanceof Site);
+
+        try {
+            return new Uri($site->getAttribute('cdnBase'));
+        } catch (InvalidArgumentException) {
+            return $site->getBase();
+        }
+    }
+
+    protected function getRequest(): ServerRequestInterface
+    {
+        return $GLOBALS['TYPO3_REQUEST'];
     }
 }

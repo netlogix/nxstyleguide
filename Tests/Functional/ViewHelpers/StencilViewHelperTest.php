@@ -8,6 +8,10 @@ use DOMDocument;
 use LogicException;
 use Netlogix\Nxstyleguide\ViewHelpers\StencilViewHelper;
 use PHPUnit\Framework\Attributes\Test;
+use Psr\Http\Message\ServerRequestInterface;
+use TYPO3\CMS\Core\Core\SystemEnvironmentBuilder;
+use TYPO3\CMS\Core\Site\Entity\Site;
+use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
 class StencilViewHelperTest extends FunctionalTestCase
@@ -15,6 +19,12 @@ class StencilViewHelperTest extends FunctionalTestCase
     protected array $testExtensionsToLoad = [
         'typo3conf/ext/nxstyleguide/Tests/Functional/Fixtures/Extensions/nxwebsite',
     ];
+
+    public function tearDown(): void
+    {
+        unset($GLOBALS['TYPO3_REQUEST']);
+        parent::tearDown();
+    }
 
     #[Test]
     public function initializeArguments_should_registerArguments_and_registerUniversalTagAttributes(): void
@@ -42,9 +52,36 @@ class StencilViewHelperTest extends FunctionalTestCase
     }
 
     #[Test]
-    public function render_should_return_script_elements_for_stencil(): void
+    public function render_should_return_script_elements_for_stencil_with_cdn_base(): void
     {
-        $subject = new StencilViewHelper();
+        $serverRequest = $this->getMockBuilder(ServerRequestInterface::class)
+            ->getMock();
+
+        $site = new Site('example', 1, [
+            'cdnBase' => 'https://cdn.example.com',
+        ]);
+
+        $serverRequest->expects(self::atLeastOnce())
+            ->method('getAttribute')
+            ->willReturnCallback(fn ($key) => match ($key) {
+                'applicationType' => SystemEnvironmentBuilder::REQUESTTYPE_FE,
+                'site' => $site,
+            });
+
+        $GLOBALS['TYPO3_REQUEST'] = $serverRequest;
+
+        $subject = $this->getAccessibleMock(StencilViewHelper::class, ['getUrl']);
+
+        $subject->expects(self::once())
+            ->method('getUrl')
+            ->willReturnCallback(function ($url) {
+                if (str_contains($url, 'Build/Scripts/styleguide.esm.js')) {
+                    return GeneralUtility::getUrl(GeneralUtility::getFileAbsFileName('EXT:nxwebsite/Resources/Public/Build/Scripts/styleguide.esm.js'));
+                }
+
+                return null;
+            });
+
         $subject->setArguments([
             'resourcesUrl' => 'EXT:nxwebsite/Resources/Public/Build/Scripts/',
             'stencilNamespace' => 'styleguide',
@@ -61,7 +98,7 @@ class StencilViewHelperTest extends FunctionalTestCase
 
         self::assertEquals('module', $scriptTags->item(0)->getAttribute('type'));
         self::assertEquals(
-            'typo3conf/ext/nxwebsite/Resources/Public/Build/Scripts/',
+            'https://cdn.example.com/typo3conf/ext/nxwebsite/Resources/Public/Build/Scripts/',
             $scriptTags->item(0)
                 ->getAttribute('data-resources-url')
         );
@@ -69,21 +106,21 @@ class StencilViewHelperTest extends FunctionalTestCase
 
         self::assertEquals('', $scriptTags->item(1)->getAttribute('nomodule'));
         self::assertEquals(
-            'typo3conf/ext/nxwebsite/Resources/Public/Build/Scripts/styleguide.js',
+            'https://cdn.example.com/typo3conf/ext/nxwebsite/Resources/Public/Build/Scripts/styleguide.js',
             $scriptTags->item(1)
                 ->getAttribute('src')
         );
 
         self::assertStringContainsString(
-            'export{hello as hello1}from"typo3conf/ext/nxwebsite/Resources/Public/Build/Scripts/hello.js"',
+            'export{hello as hello1}from"https://cdn.example.com/typo3conf/ext/nxwebsite/Resources/Public/Build/Scripts/hello.js"',
             $result
         );
         self::assertStringContainsString(
-            'import{world as world1}from"typo3conf/ext/nxwebsite/Resources/Public/Build/Scripts/world.js"',
+            'import{world as world1}from"https://cdn.example.com/typo3conf/ext/nxwebsite/Resources/Public/Build/Scripts/world.js"',
             $result
         );
         self::assertStringContainsString(
-            'import"typo3conf/ext/nxwebsite/Resources/Public/Build/Scripts/foo.js"',
+            'import"https://cdn.example.com/typo3conf/ext/nxwebsite/Resources/Public/Build/Scripts/foo.js"',
             $result
         );
 
@@ -91,17 +128,111 @@ class StencilViewHelperTest extends FunctionalTestCase
         $this->assertCount(3, $linkTags);
 
         self::assertEquals(
-            'typo3conf/ext/nxwebsite/Resources/Public/Build/Scripts/hello.js',
+            'https://cdn.example.com/typo3conf/ext/nxwebsite/Resources/Public/Build/Scripts/hello.js',
             $linkTags->item(0)
                 ->getAttribute('href')
         );
         self::assertEquals(
-            'typo3conf/ext/nxwebsite/Resources/Public/Build/Scripts/world.js',
+            'https://cdn.example.com/typo3conf/ext/nxwebsite/Resources/Public/Build/Scripts/world.js',
             $linkTags->item(1)
                 ->getAttribute('href')
         );
         self::assertEquals(
-            'typo3conf/ext/nxwebsite/Resources/Public/Build/Scripts/foo.js',
+            'https://cdn.example.com/typo3conf/ext/nxwebsite/Resources/Public/Build/Scripts/foo.js',
+            $linkTags->item(2)
+                ->getAttribute('href')
+        );
+    }
+
+
+    #[Test]
+    public function render_should_return_script_elements_for_stencil(): void
+    {
+        $serverRequest = $this->getMockBuilder(ServerRequestInterface::class)
+            ->getMock();
+
+        $site = new Site('example', 1, [
+            'base' => 'https://www.example.com',
+        ]);
+
+        $serverRequest->expects(self::atLeastOnce())
+            ->method('getAttribute')
+            ->willReturnCallback(fn ($key) => match ($key) {
+                'applicationType' => SystemEnvironmentBuilder::REQUESTTYPE_FE,
+                'site' => $site,
+            });
+
+        $GLOBALS['TYPO3_REQUEST'] = $serverRequest;
+
+        $subject = $this->getAccessibleMock(StencilViewHelper::class, ['getUrl']);
+
+        $subject->expects(self::once())
+            ->method('getUrl')
+            ->willReturnCallback(function ($url) {
+                if (str_contains($url, 'Build/Scripts/styleguide.esm.js')) {
+                    return GeneralUtility::getUrl(GeneralUtility::getFileAbsFileName('EXT:nxwebsite/Resources/Public/Build/Scripts/styleguide.esm.js'));
+                }
+
+                return null;
+            });
+
+        $subject->setArguments([
+            'resourcesUrl' => 'EXT:nxwebsite/Resources/Public/Build/Scripts/',
+            'stencilNamespace' => 'styleguide',
+        ]);
+
+        $subject->initializeArguments();
+        $result = $subject->render();
+
+        $doc = new DOMDocument();
+        $doc->loadHTML($result);
+
+        $scriptTags = $doc->getElementsByTagName('script');
+        $this->assertCount(2, $scriptTags);
+
+        self::assertEquals('module', $scriptTags->item(0)->getAttribute('type'));
+        self::assertEquals(
+            'https://www.example.com/typo3conf/ext/nxwebsite/Resources/Public/Build/Scripts/',
+            $scriptTags->item(0)
+                ->getAttribute('data-resources-url')
+        );
+        self::assertEquals('styleguide', $scriptTags->item(0)->getAttribute('data-stencil-namespace'));
+
+        self::assertEquals('', $scriptTags->item(1)->getAttribute('nomodule'));
+        self::assertEquals(
+            'https://www.example.com/typo3conf/ext/nxwebsite/Resources/Public/Build/Scripts/styleguide.js',
+            $scriptTags->item(1)
+                ->getAttribute('src')
+        );
+
+        self::assertStringContainsString(
+            'export{hello as hello1}from"https://www.example.com/typo3conf/ext/nxwebsite/Resources/Public/Build/Scripts/hello.js"',
+            $result
+        );
+        self::assertStringContainsString(
+            'import{world as world1}from"https://www.example.com/typo3conf/ext/nxwebsite/Resources/Public/Build/Scripts/world.js"',
+            $result
+        );
+        self::assertStringContainsString(
+            'import"https://www.example.com/typo3conf/ext/nxwebsite/Resources/Public/Build/Scripts/foo.js"',
+            $result
+        );
+
+        $linkTags = $doc->getElementsByTagName('link');
+        $this->assertCount(3, $linkTags);
+
+        self::assertEquals(
+            'https://www.example.com/typo3conf/ext/nxwebsite/Resources/Public/Build/Scripts/hello.js',
+            $linkTags->item(0)
+                ->getAttribute('href')
+        );
+        self::assertEquals(
+            'https://www.example.com/typo3conf/ext/nxwebsite/Resources/Public/Build/Scripts/world.js',
+            $linkTags->item(1)
+                ->getAttribute('href')
+        );
+        self::assertEquals(
+            'https://www.example.com/typo3conf/ext/nxwebsite/Resources/Public/Build/Scripts/foo.js',
             $linkTags->item(2)
                 ->getAttribute('href')
         );
