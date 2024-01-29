@@ -47,7 +47,7 @@ class StencilViewHelper extends AbstractTagBasedViewHelper
         $filesToPreload = [];
         $javaScriptContent = preg_replace_callback(
             '~(?<import>from|import)"(?<filePath>\.\/(?<fileName>[^"]+.js))"~m',
-            function ($matches) use ($assetUrl, &$filesToPreload) {
+            static function ($matches) use ($assetUrl, &$filesToPreload): string {
                 $fileUri = sprintf('%1$s%2$s', $assetUrl, $matches['fileName']);
                 $filesToPreload[] = $fileUri;
 
@@ -58,7 +58,7 @@ class StencilViewHelper extends AbstractTagBasedViewHelper
 
         $javaScriptContent = preg_replace_callback(
             "~(?<import>from|import)\s'(?<filePath>\.\/(?<fileName>[^']+.js))'~m",
-            function ($matches) use ($assetUrl, &$filesToPreload) {
+            static function ($matches) use ($assetUrl, &$filesToPreload): string {
                 $fileUri = sprintf('%1$s%2$s', $assetUrl, $matches['fileName']);
                 $filesToPreload[] = $fileUri;
 
@@ -74,12 +74,15 @@ class StencilViewHelper extends AbstractTagBasedViewHelper
         );
 
         $result .= implode(
-                PHP_EOL,
-                array_map(
-                    fn ($fileUri) => sprintf('<link href="%s" rel="modulepreload" />', $this->getAbsoluteWebPath($fileUri)),
-                    array_unique($filesToPreload)
-                )
-            ) . PHP_EOL;
+            PHP_EOL,
+            array_map(
+                fn ($fileUri): string => sprintf(
+                    '<link href="%s" rel="modulepreload" />',
+                    $this->getAbsoluteWebPath($fileUri)
+                ),
+                array_unique($filesToPreload)
+            )
+        ) . PHP_EOL;
 
         $this->tag->addAttribute('type', 'module');
         $this->tag->addAttribute('data-resources-url', $assetUrl);
@@ -93,9 +96,8 @@ class StencilViewHelper extends AbstractTagBasedViewHelper
         $this->tag->addAttribute('nomodule', '');
         $this->tag->addAttribute('src', $this->getAbsoluteWebPath($resourcesUrl . $namespace . '.js', true));
         $this->tag->forceClosingTag(true);
-        $result .= $this->tag->render() . PHP_EOL;
 
-        return $result;
+        return $result . ($this->tag->render() . PHP_EOL);
     }
 
     protected function getUrl(string $url): ?string
@@ -103,7 +105,7 @@ class StencilViewHelper extends AbstractTagBasedViewHelper
         return GeneralUtility::getUrl($url) ?? null;
     }
 
-    private function getAbsoluteWebPath($file, $cacheBreaker = false): string
+    private function getAbsoluteWebPath($file, bool $cacheBreaker = false): string
     {
         if (PathUtility::isExtensionPath($file)) {
             $file = Environment::getPublicPath() . '/' . PathUtility::getPublicResourceWebPath($file, false);

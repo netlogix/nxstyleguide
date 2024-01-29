@@ -53,6 +53,7 @@ class FileContentViewHelper extends AbstractViewHelper
             } else {
                 $mimeType = $arguments['mimeType'];
             }
+
             $content = (string) GeneralUtility::getUrl($file);
 
             switch ($mimeType) {
@@ -66,9 +67,10 @@ class FileContentViewHelper extends AbstractViewHelper
                     if ($baseUri) {
                         $content = str_replace('../', $baseUri, $content);
                     }
+
                     $content = preg_replace_callback(
                         '~sourceMappingURL=(?<fileName>[^"]+.css)\.map~m',
-                        function ($matches) use ($arguments) {
+                        static function ($matches) use ($arguments): string {
                             $fileUri = GeneralUtility::getFileAbsFileName($arguments['file']);
                             $fileUri = (string) (new Uri('/' . rtrim(PathUtility::getRelativePathTo($fileUri), '/')))
                                 ->withScheme('https')
@@ -94,7 +96,7 @@ class FileContentViewHelper extends AbstractViewHelper
         }
     }
 
-    public function initializeArguments()
+    public function initializeArguments(): void
     {
         $this->registerArgument('file', 'string', '', true);
         $this->registerArgument('arguments', 'array', 'The arguments for vsprintf', false, []);

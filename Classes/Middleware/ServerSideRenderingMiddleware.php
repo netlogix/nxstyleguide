@@ -18,20 +18,11 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 class ServerSideRenderingMiddleware implements MiddlewareInterface
 {
-    private RequestFactoryInterface $requestFactory;
-
-    private StreamFactoryInterface $streamFactory;
-
-    private ClientInterface $client;
-
     public function __construct(
-        RequestFactoryInterface $requestFactory,
-        StreamFactoryInterface $streamFactory,
-        ClientInterface $client
+        private readonly RequestFactoryInterface $requestFactory,
+        private readonly StreamFactoryInterface $streamFactory,
+        private readonly ClientInterface $client
     ) {
-        $this->requestFactory = $requestFactory;
-        $this->streamFactory = $streamFactory;
-        $this->client = $client;
     }
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
@@ -42,7 +33,7 @@ class ServerSideRenderingMiddleware implements MiddlewareInterface
             return $response;
         }
 
-        if (strpos($response->getHeaderLine('Content-Type'), 'text/html') === false) {
+        if (!str_contains($response->getHeaderLine('Content-Type'), 'text/html')) {
             return $response;
         }
 
@@ -70,7 +61,7 @@ class ServerSideRenderingMiddleware implements MiddlewareInterface
             return ($res->getStatusCode() === 200)
                 ? $response->withBody($res->getBody())
                 : $response;
-        } catch (Exception $e) {
+        } catch (Exception) {
             return $response;
         }
     }

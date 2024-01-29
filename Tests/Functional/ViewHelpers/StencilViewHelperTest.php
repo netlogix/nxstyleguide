@@ -20,7 +20,7 @@ class StencilViewHelperTest extends FunctionalTestCase
         'typo3conf/ext/nxstyleguide/Tests/Functional/Fixtures/Extensions/nxwebsite',
     ];
 
-    public function tearDown(): void
+    protected function tearDown(): void
     {
         unset($GLOBALS['TYPO3_REQUEST']);
         parent::tearDown();
@@ -39,7 +39,7 @@ class StencilViewHelperTest extends FunctionalTestCase
 
         $subject->expects($this->exactly(6))
             ->method('registerArgument')
-            ->willReturnCallback(fn ($name, $type, $description, $required, $defaultValue) => match (true) {
+            ->willReturnCallback(static fn ($name, $type, $description, $required, $defaultValue) => match (true) {
                 $name === 'resourcesUrl' && $type === 'string' && $description === '' && $required === true => null,
                 $name === 'stencilNamespace' && $type === 'string' && $description === '' && $required === true => null,
                 $name === 'components' && $type === 'array' && $description === 'Components to preload' && $required === false && $defaultValue === [] => null,
@@ -54,8 +54,7 @@ class StencilViewHelperTest extends FunctionalTestCase
     #[Test]
     public function render_should_return_script_elements_for_stencil_with_cdn_base(): void
     {
-        $serverRequest = $this->getMockBuilder(ServerRequestInterface::class)
-            ->getMock();
+        $serverRequest = $this->createMock(ServerRequestInterface::class);
 
         $site = new Site('example', 1, [
             'cdnBase' => 'https://cdn.example.com',
@@ -63,7 +62,7 @@ class StencilViewHelperTest extends FunctionalTestCase
 
         $serverRequest->expects(self::atLeastOnce())
             ->method('getAttribute')
-            ->willReturnCallback(fn ($key) => match ($key) {
+            ->willReturnCallback(static fn ($key): Site|int => match ($key) {
                 'applicationType' => SystemEnvironmentBuilder::REQUESTTYPE_FE,
                 'site' => $site,
             });
@@ -74,9 +73,11 @@ class StencilViewHelperTest extends FunctionalTestCase
 
         $subject->expects(self::once())
             ->method('getUrl')
-            ->willReturnCallback(function ($url) {
+            ->willReturnCallback(static function ($url): string|bool|null {
                 if (str_contains($url, 'Build/Scripts/styleguide.esm.js')) {
-                    return GeneralUtility::getUrl(GeneralUtility::getFileAbsFileName('EXT:nxwebsite/Resources/Public/Build/Scripts/styleguide.esm.js'));
+                    return GeneralUtility::getUrl(
+                        GeneralUtility::getFileAbsFileName('EXT:nxwebsite/Resources/Public/Build/Scripts/styleguide.esm.js')
+                    );
                 }
 
                 return null;
@@ -88,6 +89,7 @@ class StencilViewHelperTest extends FunctionalTestCase
         ]);
 
         $subject->initializeArguments();
+
         $result = $subject->render();
 
         $doc = new DOMDocument();
@@ -144,12 +146,10 @@ class StencilViewHelperTest extends FunctionalTestCase
         );
     }
 
-
     #[Test]
     public function render_should_return_script_elements_for_stencil(): void
     {
-        $serverRequest = $this->getMockBuilder(ServerRequestInterface::class)
-            ->getMock();
+        $serverRequest = $this->createMock(ServerRequestInterface::class);
 
         $site = new Site('example', 1, [
             'base' => 'https://www.example.com',
@@ -157,7 +157,7 @@ class StencilViewHelperTest extends FunctionalTestCase
 
         $serverRequest->expects(self::atLeastOnce())
             ->method('getAttribute')
-            ->willReturnCallback(fn ($key) => match ($key) {
+            ->willReturnCallback(static fn ($key): Site|int => match ($key) {
                 'applicationType' => SystemEnvironmentBuilder::REQUESTTYPE_FE,
                 'site' => $site,
             });
@@ -168,9 +168,11 @@ class StencilViewHelperTest extends FunctionalTestCase
 
         $subject->expects(self::once())
             ->method('getUrl')
-            ->willReturnCallback(function ($url) {
+            ->willReturnCallback(static function ($url): string|bool|null {
                 if (str_contains($url, 'Build/Scripts/styleguide.esm.js')) {
-                    return GeneralUtility::getUrl(GeneralUtility::getFileAbsFileName('EXT:nxwebsite/Resources/Public/Build/Scripts/styleguide.esm.js'));
+                    return GeneralUtility::getUrl(
+                        GeneralUtility::getFileAbsFileName('EXT:nxwebsite/Resources/Public/Build/Scripts/styleguide.esm.js')
+                    );
                 }
 
                 return null;
@@ -182,6 +184,7 @@ class StencilViewHelperTest extends FunctionalTestCase
         ]);
 
         $subject->initializeArguments();
+
         $result = $subject->render();
 
         $doc = new DOMDocument();
