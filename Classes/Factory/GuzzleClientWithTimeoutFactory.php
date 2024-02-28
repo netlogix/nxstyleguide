@@ -30,6 +30,7 @@ class GuzzleClientWithTimeoutFactory
             foreach ($GLOBALS['TYPO3_CONF_VARS']['HTTP']['handler'] ?? [] as $name => $handler) {
                 $stack->push($handler, (string) $name);
             }
+
             $httpOptions['handler'] = $stack;
         }
 
