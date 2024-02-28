@@ -39,7 +39,7 @@ class PictureViewHelper extends AbstractTagBasedViewHelper
         $this->imageService = $imageService ?? GeneralUtility::makeInstance(ImageService::class);
     }
 
-    public function initializeArguments()
+    public function initializeArguments(): void
     {
         parent::initializeArguments();
         $this->registerUniversalTagAttributes();
@@ -75,10 +75,11 @@ class PictureViewHelper extends AbstractTagBasedViewHelper
                 );
             } else {
                 $image = $this->getImageByPageData($this->arguments['pageData']);
-                if (!$image) {
+                if (!$image instanceof FileReference) {
                     return '';
                 }
             }
+
             $this->tag->addAttribute('class', $this->arguments['class'] ?? '');
 
             if (!empty($this->arguments['aspectRatio'])) {
@@ -112,13 +113,13 @@ class PictureViewHelper extends AbstractTagBasedViewHelper
             );
 
             return $this->tag->render();
-        } catch (ResourceDoesNotExistException $e) {
+        } catch (ResourceDoesNotExistException) {
             // thrown if file does not exist
-        } catch (UnexpectedValueException $e) {
+        } catch (UnexpectedValueException) {
             // thrown if a file has been replaced with a folder
-        } catch (RuntimeException $e) {
+        } catch (RuntimeException) {
             // RuntimeException thrown if a file is outside a storage
-        } catch (InvalidArgumentException $e) {
+        } catch (InvalidArgumentException) {
             // thrown if file storage does not exist
         }
 
@@ -130,7 +131,7 @@ class PictureViewHelper extends AbstractTagBasedViewHelper
         $fileRepository = GeneralUtility::makeInstance(FileRepository::class);
         $fileObjects = $fileRepository->findByRelation('pages', 'media', $data['uid']);
 
-        return array_key_exists(0, $fileObjects) ? $fileObjects[0] : null;
+        return $fileObjects[0] ?? null;
     }
 
     private function getSourceSets(FileInterface $image): string
@@ -144,6 +145,7 @@ class PictureViewHelper extends AbstractTagBasedViewHelper
             $processedImage = $this->getProcessedImage($image, $imageConfiguration);
             $tags[(int) $minWidth] = $this->renderSourceTag($processedImage, $minWidth);
         }
+
         krsort($tags);
 
         return implode(PHP_EOL, $tags);
@@ -182,6 +184,7 @@ class PictureViewHelper extends AbstractTagBasedViewHelper
                     implode(';', ['background-size: cover', sprintf("background-image: url('%s')", $placeholder)])
                 );
             }
+
             $tag->addAttribute('fetchpriority', 'high');
         }
 
@@ -197,6 +200,7 @@ class PictureViewHelper extends AbstractTagBasedViewHelper
             $cropArea = $cropVariantCollection->getCropArea($cropVariant);
             $processingInstructions['crop'] = $cropArea->isEmpty() ? null : $cropArea->makeAbsoluteBasedOnFile($image);
         }
+
         if (!empty($this->arguments['fileExtension'] ?? '')) {
             $processingInstructions['fileExtension'] = $this->arguments['fileExtension'];
         }
@@ -207,7 +211,7 @@ class PictureViewHelper extends AbstractTagBasedViewHelper
     private function renderSourceTag(FileInterface $image, int $minWidth): string
     {
         $tag = new TagBuilder('source');
-        $tag->addAttribute('media', "(min-width: {$minWidth}px)");
+        $tag->addAttribute('media', sprintf('(min-width: %dpx)', $minWidth));
         $tag->addAttribute('srcset', $this->imageService->getImageUri($image));
 
         return $tag->render();
@@ -216,9 +220,9 @@ class PictureViewHelper extends AbstractTagBasedViewHelper
     private function getImageAlt(FileInterface $image): string
     {
         if ($this->arguments['additionalAttributes'] && array_key_exists(
-                'alt',
-                $this->arguments['additionalAttributes']
-            )) {
+            'alt',
+            $this->arguments['additionalAttributes']
+        )) {
             return $this->arguments['additionalAttributes']['alt'];
         }
 
@@ -251,12 +255,13 @@ class PictureViewHelper extends AbstractTagBasedViewHelper
         if ($image->getSize() > self::MAX_INLINE_IMAGE_SIZE) {
             return $this->imageService->getImageUri($image);
         }
+
         $thumbnailContent = base64_encode($image->getContents());
         if ($this->isSvg($image)) {
             return 'data:image/svg+xml;base64,' . $thumbnailContent;
-        } else {
-            return 'data:image/' . $image->getType() . ';base64,' . $thumbnailContent;
         }
+
+        return 'data:image/' . $image->getType() . ';base64,' . $thumbnailContent;
     }
 
     private function getAspectRatio(FileInterface $image): float

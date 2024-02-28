@@ -18,7 +18,7 @@ class XhrCacheViewHelperTest extends UnitTestCase
         $subject = $this->getAccessibleMock(XhrCacheViewHelper::class, ['registerArgument']);
         $subject->expects($this->exactly(2))
             ->method('registerArgument')
-            ->willReturnCallback(fn ($name, $type, $description, $required) => match (true) {
+            ->willReturnCallback(static fn ($name, $type, $description, $required) => match (true) {
                 $name === 'url' && $type === 'string' && $description === '' && $required === false => null,
                 $name === 'content' && $type === 'mixed' && $description === '' && $required === true => null,
                 default => throw new LogicException()

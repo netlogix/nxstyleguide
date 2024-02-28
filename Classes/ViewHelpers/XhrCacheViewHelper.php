@@ -12,7 +12,7 @@ class XhrCacheViewHelper extends AbstractTagBasedViewHelper
 {
     protected $tagName = 'script';
 
-    public function initializeArguments()
+    public function initializeArguments(): void
     {
         $this->registerArgument('url', 'string', '', false);
         $this->registerArgument('content', 'mixed', '', true, null);
