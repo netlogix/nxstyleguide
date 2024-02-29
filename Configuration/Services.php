@@ -17,7 +17,7 @@ return static function (ContainerConfigurator $containerConfigurator): void {
         ->autoconfigure();
     $services->load('Netlogix\\Nxstyleguide\\', '../Classes/');
     $services->set('guzzle_http_client_with_timeout', Client::class)
-        ->factory(GuzzleClientWithTimeoutFactory::getClient(...));
+        ->factory([GuzzleClientWithTimeoutFactory::class, 'getClient']);
     $services->set(ServerSideRenderingMiddleware::class)
         ->arg('$requestFactory', service(RequestFactoryInterface::class))
         ->arg('$streamFactory', service(StreamFactoryInterface::class))

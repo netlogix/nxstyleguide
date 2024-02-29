@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
+use Rector\CodeQuality\Rector\Array_\CallableThisArrayToAnonymousFunctionRector;
 use Rector\Config\RectorConfig;
+use Rector\Php81\Rector\Array_\FirstClassCallableRector;
 use Rector\PostRector\Rector\NameImportingPostRector;
 use Rector\Set\ValueObject\LevelSetList;
 use Rector\Set\ValueObject\SetList;
@@ -45,8 +47,7 @@ return RectorConfig::configure()
     # If you use importNames(), you should consider excluding some TYPO3 files.
     ->withSkip([
         // @see https://github.com/sabbelasichon/typo3-rector/issues/2536
-        __DIR__ . '/**/Configuration/ExtensionBuilder/*',
-        __DIR__ . '/**/Resources/*',
+        __DIR__ . '/Resources/*',
         __DIR__ . '/vendor/*',
         __DIR__ . '/Build/*',
         __DIR__ . '/public/*',
@@ -56,7 +57,11 @@ return RectorConfig::configure()
             'ext_localconf.php',
             'ext_tables.php',
             'ClassAliasMap.php',
-            __DIR__ . '/**/Configuration/*.php',
-            __DIR__ . '/**/Configuration/**/*.php',
-        ]
+        ],
+        FirstClassCallableRector::class => [
+            __DIR__ . '/Configuration/Services.php',
+        ],
+        CallableThisArrayToAnonymousFunctionRector::class => [
+            __DIR__ . '/Configuration/Services.php',
+        ],
     ]);
