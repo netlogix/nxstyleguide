@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Netlogix\Nxstyleguide\Hooks;
 
+use ReflectionProperty;
 use TYPO3\CMS\Core\Page\PageRenderer;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
-use TYPO3\CMS\Extbase\Reflection\ObjectAccess;
 
 class PageCacheEnhancer
 {
@@ -26,25 +26,40 @@ class PageCacheEnhancer
     {
         $pageRender = GeneralUtility::makeInstance(PageRenderer::class);
 
-        return ObjectAccess::getProperty($pageRender, 'inlineLanguageLabels');
+        return $this->getProperty($pageRender, 'inlineLanguageLabels');
     }
 
     private function setLabels(array $labels): void
     {
         $pageRender = GeneralUtility::makeInstance(PageRenderer::class);
-        ObjectAccess::setProperty($pageRender, 'inlineLanguageLabels', $labels);
+        $this->setProperty($pageRender, 'inlineLanguageLabels', $labels);
     }
 
     private function getSettings(): array
     {
         $pageRender = GeneralUtility::makeInstance(PageRenderer::class);
 
-        return ObjectAccess::getProperty($pageRender, 'inlineSettings');
+        return $this->getProperty($pageRender, 'inlineSettings');
     }
 
     private function setSettings(array $settings): void
     {
         $pageRender = GeneralUtility::makeInstance(PageRenderer::class);
-        ObjectAccess::setProperty($pageRender, 'inlineSettings', $settings);
+        $this->setProperty($pageRender, 'inlineSettings', $settings);
+    }
+
+    private function getProperty($subject, string $propertyName): mixed
+    {
+        $property = new ReflectionProperty($subject, $propertyName);
+        $property->setAccessible(true);
+
+        return $property->getValue($subject);
+    }
+
+    private function setProperty($subject, string $propertyName, mixed $value): void
+    {
+        $property = new ReflectionProperty($subject, $propertyName);
+        $property->setAccessible(true);
+        $property->setValue($subject, $value);
     }
 }
