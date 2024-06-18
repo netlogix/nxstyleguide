@@ -5,13 +5,18 @@ declare(strict_types=1);
 namespace Netlogix\Nxstyleguide\ViewHelpers;
 
 use InvalidArgumentException;
+use Psr\Http\Message\ServerRequestInterface;
 use RuntimeException;
+use Throwable;
+use TYPO3\CMS\Core\Http\ServerRequestFactory;
 use TYPO3\CMS\Core\Imaging\ImageManipulation\CropVariantCollection;
+use TYPO3\CMS\Core\Resource\AbstractFile;
 use TYPO3\CMS\Core\Resource\Exception\ResourceDoesNotExistException;
 use TYPO3\CMS\Core\Resource\FileInterface;
 use TYPO3\CMS\Core\Resource\FileReference;
 use TYPO3\CMS\Core\Resource\FileRepository;
 use TYPO3\CMS\Core\Resource\ProcessedFile;
+use TYPO3\CMS\Core\Routing\PageArguments;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Extbase\Service\ImageService;
 use TYPO3Fluid\Fluid\Core\ViewHelper\AbstractTagBasedViewHelper;
@@ -51,8 +56,10 @@ class PictureViewHelper extends AbstractTagBasedViewHelper
             'cropVariant' => 'desktop',
             'width' => 1120,
         ]);
+        $this->registerArgument('cropVariant', 'string', 'Crop Variant configuration', false, 'default');
         $this->registerArgument('srcset', 'array', 'Srcset configuration', true);
         $this->registerArgument('lazy', 'boolean', 'Use lazy loading markup', false, true);
+        $this->registerArgument('eager', 'boolean', 'Use eager loading markup', false, false);
         $this->registerArgument('fileExtension', 'string', 'Custom file extension to use');
         $this->registerArgument('aspectRatio', 'float', 'Custom aspect ratio to use');
     }
@@ -97,6 +104,11 @@ class PictureViewHelper extends AbstractTagBasedViewHelper
                 $processedImage = $this->getProcessedImage($image, $this->arguments['src']);
                 $width = $processedImage->getProperty('width');
                 $aspectRatio = $this->arguments['aspectRatio'] ?? $this->getAspectRatio($processedImage);
+            }
+
+            // Do not process pdf more then needed
+            if (!$this->isImage($image)) {
+                $image = $this->getProcessedImage($image, $this->arguments['src']);
             }
 
             $this->tag->addAttribute(
@@ -172,20 +184,10 @@ class PictureViewHelper extends AbstractTagBasedViewHelper
             $tag->addAttribute('loading', 'lazy');
             $tag->addAttribute('decoding', 'async');
             $tag->addAttribute('fetchpriority', 'low');
-        } else {
-            if ($this->supportWebpConversion($image)) {
-                $processedInline = $this->getProcessedImage($image, [
-                    'width' => 10,
-                ]);
-                $placeholder = $this->getBase64EncodedImageContents($processedInline);
-                $tag->addAttribute('onload', "this.removeAttribute('style')");
-                $tag->addAttribute(
-                    'style',
-                    implode(';', ['background-size: cover', sprintf("background-image: url('%s')", $placeholder)])
-                );
-            }
-
+        } elseif ($this->isPrintRequest() || $this->arguments['eager']) {
+            $tag->addAttribute('loading', 'eger');
             $tag->addAttribute('fetchpriority', 'high');
+            $tag->removeAttribute('decoding');
         }
 
         return $tag->render();
@@ -195,7 +197,7 @@ class PictureViewHelper extends AbstractTagBasedViewHelper
     {
         if ($image->hasProperty('crop') && $image->getProperty('crop')) {
             $cropString = $image->getProperty('crop');
-            $cropVariantCollection = CropVariantCollection::create((string) $cropString);
+            $cropVariantCollection = CropVariantCollection::create($cropString);
             $cropVariant = $processingInstructions['cropVariant'] ?? $this->arguments['cropVariant'] ?? 'default';
             $cropArea = $cropVariantCollection->getCropArea($cropVariant);
             $processingInstructions['crop'] = $cropArea->isEmpty() ? null : $cropArea->makeAbsoluteBasedOnFile($image);
@@ -219,19 +221,17 @@ class PictureViewHelper extends AbstractTagBasedViewHelper
 
     private function getImageAlt(FileInterface $image): string
     {
-        if ($this->arguments['additionalAttributes'] && array_key_exists(
-            'alt',
-            $this->arguments['additionalAttributes']
-        )) {
-            return $this->arguments['additionalAttributes']['alt'];
-        }
-
-        return $image->getProperty('alternative') ?: $this->getImageTitle($image);
+        return $this->arguments['additionalAttributes']['alt'] ?? $image->getProperty('alternative') ?? $this->getImageTitle($image) ?? '';
     }
 
     private function getImageTitle(FileInterface $image): string
     {
-        return $this->arguments['imageTitle'] ?? $this->arguments['title'] ?? $image->getProperty('title');
+        return $this->arguments['imageTitle'] ?? $this->arguments['title'] ?? $image->getProperty('title') ?? '';
+    }
+
+    private function isImage(FileInterface $image): bool
+    {
+        return $image->getType() === AbstractFile::FILETYPE_IMAGE;
     }
 
     private function isSvg(FileInterface $image): bool
@@ -240,28 +240,6 @@ class PictureViewHelper extends AbstractTagBasedViewHelper
             'image/svg', 'image/svg+xml' => true,
             default => false,
         };
-    }
-
-    private function supportWebpConversion(FileInterface $image): bool
-    {
-        return match ($image->getMimeType()) {
-            'image/png', 'image/jpeg' => true,
-            default => false,
-        };
-    }
-
-    private function getBase64EncodedImageContents(ProcessedFile $image): string
-    {
-        if ($image->getSize() > self::MAX_INLINE_IMAGE_SIZE) {
-            return $this->imageService->getImageUri($image);
-        }
-
-        $thumbnailContent = base64_encode($image->getContents());
-        if ($this->isSvg($image)) {
-            return 'data:image/svg+xml;base64,' . $thumbnailContent;
-        }
-
-        return 'data:image/' . $image->getType() . ';base64,' . $thumbnailContent;
     }
 
     private function getAspectRatio(FileInterface $image): float
@@ -274,5 +252,25 @@ class PictureViewHelper extends AbstractTagBasedViewHelper
         }
 
         return round($image->getProperty('width') / $image->getProperty('height'), 2);
+    }
+
+    private function isPrintRequest(): bool
+    {
+        try {
+            $routing = $this->getRequest()->getAttribute('routing');
+        } catch (Throwable) {
+            return false;
+        }
+
+        if (!$routing instanceof PageArguments) {
+            return false;
+        }
+
+        return (int) $routing->getPageType() === 1644444444;
+    }
+
+    private function getRequest(): ServerRequestInterface
+    {
+        return $GLOBALS['TYPO3_REQUEST'] ?? ServerRequestFactory::fromGlobals();
     }
 }
