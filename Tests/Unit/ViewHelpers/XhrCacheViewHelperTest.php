@@ -6,7 +6,9 @@ namespace Netlogix\Nxstyleguide\Tests\Unit\ViewHelpers;
 
 use LogicException;
 use Netlogix\Nxstyleguide\ViewHelpers\XhrCacheViewHelper;
+use Netlogix\Nxvarnish\Xclass\Controller\TypoScriptFrontendController;
 use PHPUnit\Framework\Attributes\Test;
+use TYPO3\CMS\Core\Page\PageRenderer;
 use TYPO3\CMS\Extbase\Persistence\QueryResultInterface;
 use TYPO3\TestingFramework\Core\Unit\UnitTestCase;
 
@@ -15,7 +17,7 @@ class XhrCacheViewHelperTest extends UnitTestCase
     #[Test]
     public function initializeArguments_should_registerArguments(): void
     {
-        $subject = $this->getAccessibleMock(XhrCacheViewHelper::class, ['registerArgument']);
+        $subject = $this->getAccessibleMock(XhrCacheViewHelper::class, ['registerArgument'], [$this->getPageRendererMock()]);
         $subject->expects($this->exactly(2))
             ->method('registerArgument')
             ->willReturnCallback(static fn ($name, $type, $description, $required) => match (true) {
@@ -30,7 +32,7 @@ class XhrCacheViewHelperTest extends UnitTestCase
     #[Test]
     public function should_set_window_location_href_when_no_url_given(): void
     {
-        $subject = new XhrCacheViewHelper();
+        $subject = new XhrCacheViewHelper($this->getPageRendererMock());
         $result = $subject->initializeArgumentsAndRender();
 
         $this->assertStringContainsString('url: window.location.href', $result);
@@ -39,7 +41,7 @@ class XhrCacheViewHelperTest extends UnitTestCase
     #[Test]
     public function should_set_data_null_when_no_data_given(): void
     {
-        $subject = new XhrCacheViewHelper();
+        $subject = new XhrCacheViewHelper($this->getPageRendererMock());
         $result = $subject->initializeArgumentsAndRender();
 
         $this->assertStringContainsString('data: null', $result);
@@ -48,7 +50,7 @@ class XhrCacheViewHelperTest extends UnitTestCase
     #[Test]
     public function should_set_data_when_data_is_given(): void
     {
-        $subject = new XhrCacheViewHelper();
+        $subject = new XhrCacheViewHelper($this->getPageRendererMock());
         $subject->setArguments([
             'content' => 42,
         ]);
@@ -66,12 +68,20 @@ class XhrCacheViewHelperTest extends UnitTestCase
         $queryResult->method('toArray')
             ->willReturn([['1'], ['2']]);
 
-        $subject = new XhrCacheViewHelper();
+        $subject = new XhrCacheViewHelper($this->getPageRendererMock());
         $subject->setArguments([
             'content' => $queryResult,
         ]);
         $result = $subject->initializeArgumentsAndRender();
 
         $this->assertStringContainsString('data: [["1"],["2"]]', $result);
+    }
+
+    private function getPageRendererMock(): PageRenderer
+    {
+        return $this->getMockBuilder(PageRenderer::class)
+            ->disableOriginalConstructor()
+            ->addMethods([])
+            ->getMock();
     }
 }
