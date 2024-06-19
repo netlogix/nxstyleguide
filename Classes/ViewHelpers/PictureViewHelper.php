@@ -29,7 +29,7 @@ use UnexpectedValueException;
  */
 class PictureViewHelper extends AbstractTagBasedViewHelper
 {
-    private const MAX_INLINE_IMAGE_SIZE = 50000; // 5KB
+    // 5KB
 
     /**
      * @var string
@@ -221,7 +221,11 @@ class PictureViewHelper extends AbstractTagBasedViewHelper
 
     private function getImageAlt(FileInterface $image): string
     {
-        return $this->arguments['additionalAttributes']['alt'] ?? $image->getProperty('alternative') ?? $this->getImageTitle($image) ?? '';
+        return $this->arguments['additionalAttributes']['alt'] ?? $image->getProperty(
+            'alternative'
+        ) ?? $this->getImageTitle(
+            $image
+        ) ?? '';
     }
 
     private function getImageTitle(FileInterface $image): string
@@ -257,7 +261,8 @@ class PictureViewHelper extends AbstractTagBasedViewHelper
     private function isPrintRequest(): bool
     {
         try {
-            $routing = $this->getRequest()->getAttribute('routing');
+            $routing = $this->getRequest()
+                ->getAttribute('routing');
         } catch (Throwable) {
             return false;
         }
