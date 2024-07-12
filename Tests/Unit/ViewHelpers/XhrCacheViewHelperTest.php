@@ -6,7 +6,6 @@ namespace Netlogix\Nxstyleguide\Tests\Unit\ViewHelpers;
 
 use LogicException;
 use Netlogix\Nxstyleguide\ViewHelpers\XhrCacheViewHelper;
-use Netlogix\Nxvarnish\Xclass\Controller\TypoScriptFrontendController;
 use PHPUnit\Framework\Attributes\Test;
 use TYPO3\CMS\Core\Page\PageRenderer;
 use TYPO3\CMS\Extbase\Persistence\QueryResultInterface;
@@ -17,7 +16,11 @@ class XhrCacheViewHelperTest extends UnitTestCase
     #[Test]
     public function initializeArguments_should_registerArguments(): void
     {
-        $subject = $this->getAccessibleMock(XhrCacheViewHelper::class, ['registerArgument'], [$this->getPageRendererMock()]);
+        $subject = $this->getAccessibleMock(
+            XhrCacheViewHelper::class,
+            ['registerArgument'],
+            [$this->getPageRendererMock()]
+        );
         $subject->expects($this->exactly(2))
             ->method('registerArgument')
             ->willReturnCallback(static fn ($name, $type, $description, $required) => match (true) {
