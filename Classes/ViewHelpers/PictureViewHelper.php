@@ -29,8 +29,6 @@ use UnexpectedValueException;
  */
 class PictureViewHelper extends AbstractTagBasedViewHelper
 {
-    private const MAX_INLINE_IMAGE_SIZE = 50000; // 5KB
-
     /**
      * @var string
      */
@@ -180,14 +178,14 @@ class PictureViewHelper extends AbstractTagBasedViewHelper
         $tag->addAttribute('title', $this->getImageTitle($image));
         $tag->addAttribute('src', $processedImageUri);
 
-        if ($this->arguments['lazy']) {
-            $tag->addAttribute('loading', 'lazy');
-            $tag->addAttribute('decoding', 'async');
-            $tag->addAttribute('fetchpriority', 'low');
-        } elseif ($this->isPrintRequest() || $this->arguments['eager']) {
+        if ($this->isPrintRequest() || $this->arguments['eager']) {
             $tag->addAttribute('loading', 'eger');
             $tag->addAttribute('fetchpriority', 'high');
             $tag->removeAttribute('decoding');
+        } elseif ($this->arguments['lazy']) {
+            $tag->addAttribute('loading', 'lazy');
+            $tag->addAttribute('decoding', 'async');
+            $tag->addAttribute('fetchpriority', 'low');
         }
 
         return $tag->render();
