@@ -48,7 +48,7 @@ class PageCacheEnhancer
         $this->setProperty($pageRender, 'inlineSettings', $settings);
     }
 
-    private function getProperty($subject, string $propertyName): mixed
+    private function getProperty(object $subject, string $propertyName): mixed
     {
         $property = new ReflectionProperty($subject, $propertyName);
         $property->setAccessible(true);
@@ -56,7 +56,7 @@ class PageCacheEnhancer
         return $property->getValue($subject);
     }
 
-    private function setProperty($subject, string $propertyName, mixed $value): void
+    private function setProperty(object $subject, string $propertyName, mixed $value): void
     {
         $property = new ReflectionProperty($subject, $propertyName);
         $property->setAccessible(true);
