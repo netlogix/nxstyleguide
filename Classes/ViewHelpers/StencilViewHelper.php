@@ -107,6 +107,10 @@ class StencilViewHelper extends AbstractTagBasedViewHelper
 
     private function getAbsoluteWebPath(string $file, bool $cacheBreaker = false): string
     {
+        if (PathUtility::hasProtocolAndScheme($file)) {
+            return $file;
+        }
+
         if (PathUtility::isExtensionPath($file)) {
             $file = Environment::getPublicPath() . '/' . PathUtility::getPublicResourceWebPath($file, false);
             // as the path is now absolute, make it "relative" to the current script to stay compatible
