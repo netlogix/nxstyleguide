@@ -27,7 +27,6 @@ class StencilViewHelper extends AbstractTagBasedViewHelper
     public function initializeArguments(): void
     {
         parent::initializeArguments();
-        $this->registerUniversalTagAttributes();
         $this->registerArgument('resourcesUrl', 'string', '', true);
         $this->registerArgument('stencilNamespace', 'string', '', true);
         $this->registerArgument('components', 'array', 'Components to preload', false, []);

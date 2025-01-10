@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Netlogix\Nxstyleguide\ViewHelpers;
 
-use Closure;
 use GuzzleHttp\Psr7\Uri;
 use function mime_content_type;
 use function preg_match;
@@ -15,43 +14,33 @@ use Throwable;
 
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Utility\PathUtility;
-use TYPO3Fluid\Fluid\Core\Rendering\RenderingContextInterface;
 use TYPO3Fluid\Fluid\Core\ViewHelper\AbstractViewHelper;
-use TYPO3Fluid\Fluid\Core\ViewHelper\Traits\CompileWithContentArgumentAndRenderStatic;
 use function vsprintf;
 
 class FileContentViewHelper extends AbstractViewHelper
 {
-    use CompileWithContentArgumentAndRenderStatic;
+    public function initializeArguments(): void
+    {
+        parent::initializeArguments();
+        $this->registerArgument('file', 'string', '', true);
+        $this->registerArgument('arguments', 'array', 'The arguments for vsprintf', false, []);
+        $this->registerArgument('mimeType', 'string', 'Mime type of the external file', false, '');
+        $this->registerArgument('dataUri', 'boolean', 'Base46 encode file as data uri', false, false);
+        $this->registerArgument('baseUri', 'string', 'base uri to replace assets in css file', false, false);
+    }
 
-    /**
-     * @var boolean
-     */
-    protected $escapeChildren = false;
-
-    /**
-     * @var boolean
-     */
-    protected $escapeOutput = false;
-
-    /**
-     * @return bool|string
-     */
-    public static function renderStatic(
-        array $arguments,
-        Closure $renderChildrenClosure,
-        RenderingContextInterface $renderingContext
-    ) {
+    public function render(): string
+    {
         try {
-            $file = $arguments['file'];
-            $args = $arguments['arguments'];
-            $dataUri = $arguments['dataUri'];
-            $baseUri = $arguments['baseUri'];
-            if (!preg_match('/^(?:http|ftp)s?|s(?:ftp|cp):/', (string) $file)) {
+            $file = $this->arguments['file'];
+            $args = $this->arguments['arguments'];
+            $dataUri = $this->arguments['dataUri'];
+            $baseUri = $this->arguments['baseUri'];
+            if (in_array(preg_match('/^(?:http|ftp)s?|s(?:ftp|cp):/', (string) $file), [0, false], true)) {
                 $file = GeneralUtility::getFileAbsFileName(ltrim((string) $file, '/'));
                 $mimeType = mime_content_type($file);
             } else {
-                $mimeType = $arguments['mimeType'];
+                $mimeType = $this->arguments['mimeType'];
             }
 
             $content = (string) GeneralUtility::getUrl($file);
@@ -70,12 +59,9 @@ class FileContentViewHelper extends AbstractViewHelper
 
                     $content = preg_replace_callback(
                         '~sourceMappingURL=(?<fileName>[^"]+.css)\.map~m',
-                        static function ($matches) use ($arguments): string {
-                            $fileUri = GeneralUtility::getFileAbsFileName($arguments['file']);
-                            $fileUri = (string) (new Uri('/' . rtrim(
-                                (string) PathUtility::getRelativePathTo($fileUri),
-                                '/'
-                            )))
+                        function ($matches): string {
+                            $fileUri = PathUtility::getAbsoluteWebPath(GeneralUtility::getFileAbsFileName($this->arguments['file']));
+                            $fileUri = (string) (new Uri('/' . rtrim($fileUri, '/')))
                                 ->withScheme('https')
                                 ->withHost($_SERVER['CDN_BASE'] ?? $_SERVER['HTTP_HOST']);
 
@@ -92,19 +78,9 @@ class FileContentViewHelper extends AbstractViewHelper
             if ($content && $dataUri) {
                 $content = sprintf('data:%1$s;base64,%2$s', $mimeType, base64_encode($content));
             }
-
-            return trim((string) $content);
-        } catch (Throwable) {
-            return '';
+        } catch (Throwable $t) {
         }
-    }
 
-    public function initializeArguments(): void
-    {
-        $this->registerArgument('file', 'string', '', true);
-        $this->registerArgument('arguments', 'array', 'The arguments for vsprintf', false, []);
-        $this->registerArgument('mimeType', 'string', 'Mime type of the external file', false, '');
-        $this->registerArgument('dataUri', 'boolean', 'Base46 encode file as data uri', false, false);
-        $this->registerArgument('baseUri', 'string', 'base uri to replace assets in css file', false, false);
+        return trim((string) ($content ?? ''));
     }
 }

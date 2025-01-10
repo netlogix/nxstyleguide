@@ -12,16 +12,21 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\StreamFactoryInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
-use ReflectionClass;
+use ReflectionMethod;
+use ReflectionProperty;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use TYPO3\CMS\Core\Page\PageRenderer;
-use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Core\TimeTracker\TimeTracker;
 
-class ServerSideRenderingMiddleware implements MiddlewareInterface
+readonly class ServerSideRenderingMiddleware implements MiddlewareInterface
 {
     public function __construct(
-        private readonly RequestFactoryInterface $requestFactory,
-        private readonly StreamFactoryInterface $streamFactory,
-        private readonly ClientInterface $client
+        private RequestFactoryInterface $requestFactory,
+        private StreamFactoryInterface $streamFactory,
+        #[Autowire(service: 'guzzle_http_client_with_timeout')]
+        private ClientInterface $client,
+        private PageRenderer $pageRenderer,
+        private TimeTracker $timeTracker,
     ) {
     }
 
@@ -44,6 +49,7 @@ class ServerSideRenderingMiddleware implements MiddlewareInterface
             return $response;
         }
 
+        $this->timeTracker->push('Server Side Rendering');
         $requestBody = [
             'body' => (string) $response->getBody(),
             'url' => (string) $request->getUri(),
@@ -63,28 +69,22 @@ class ServerSideRenderingMiddleware implements MiddlewareInterface
                 : $response;
         } catch (Exception) {
             return $response;
+        } finally {
+            $this->timeTracker->pull();
         }
     }
 
     private function getLabels(): array
     {
-        $pageRender = GeneralUtility::makeInstance(PageRenderer::class);
-
-        $reflectionClass = new ReflectionClass($pageRender);
-        $reflectionMethod = $reflectionClass->getMethod('parseLanguageLabelsForJavaScript');
-        $reflectionMethod->setAccessible(true);
-
-        return $reflectionMethod->invoke($pageRender);
+        $method = new ReflectionMethod($this->pageRenderer, 'parseLanguageLabelsForJavaScript');
+        $method->setAccessible(true);
+        return $method->invoke($this->pageRenderer);
     }
 
     private function getSettings(): array
     {
-        $pageRender = GeneralUtility::makeInstance(PageRenderer::class);
-
-        $reflectionClass = new ReflectionClass($pageRender);
-        $reflectionProperty = $reflectionClass->getProperty('inlineSettings');
-        $reflectionProperty->setAccessible(true);
-
-        return $reflectionProperty->getValue($pageRender);
+        $property = new ReflectionProperty($this->pageRenderer, 'inlineSettings');
+        $property->setAccessible(true);
+        return $property->getValue($this->pageRenderer);
     }
 }
