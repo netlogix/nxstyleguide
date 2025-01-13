@@ -1,12 +1,10 @@
 <?php
 
-use Netlogix\Nxstyleguide\Hooks\PageCacheEnhancer;
+declare(strict_types=1);
+
+use Netlogix\Nxstyleguide\Cache\MetaDataState;
 
 defined('TYPO3') || die();
 
-call_user_func(static function (): void {
-    $GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['tslib/class.tslib_fe.php']['insertPageCacheContent'][] =
-        PageCacheEnhancer::class . '->insertPageCacheContent';
-    $GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['tslib/class.tslib_fe.php']['pageLoadedFromCache'][] =
-        PageCacheEnhancer::class . '->pageLoadedFromCache';
-});
+$GLOBALS['TYPO3_CONF_VARS']['SYS']['Objects'][TYPO3\CMS\Frontend\Cache\MetaDataState::class]['className'] =
+    MetaDataState::class;

@@ -6,7 +6,6 @@ namespace Netlogix\Nxstyleguide\Tests\Unit\ViewHelpers;
 
 use LogicException;
 use Netlogix\Nxstyleguide\ViewHelpers\XhrCacheViewHelper;
-use Netlogix\Nxvarnish\Xclass\Controller\TypoScriptFrontendController;
 use PHPUnit\Framework\Attributes\Test;
 use TYPO3\CMS\Core\Page\PageRenderer;
 use TYPO3\CMS\Extbase\Persistence\QueryResultInterface;
@@ -81,7 +80,6 @@ class XhrCacheViewHelperTest extends UnitTestCase
     {
         return $this->getMockBuilder(PageRenderer::class)
             ->disableOriginalConstructor()
-            ->addMethods([])
             ->getMock();
     }
 }
