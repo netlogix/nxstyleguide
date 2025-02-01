@@ -19,6 +19,8 @@ use function vsprintf;
 
 class FileContentViewHelper extends AbstractViewHelper
 {
+    protected $escapeOutput = false;
+
     public function initializeArguments(): void
     {
         parent::initializeArguments();
