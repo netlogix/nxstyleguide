@@ -39,7 +39,7 @@ class StencilViewHelper extends AbstractTagBasedViewHelper
         $resourcesUrl = rtrim(trim((string) $this->arguments['resourcesUrl']), '/') . '/';
 
         $javaScriptContent = (string) $this->getUrl(
-            $this->getAbsoluteWebPath($resourcesUrl . $namespace . '.esm.js', true)
+            $this->getAbsoluteWebPath($resourcesUrl . $namespace . '.esm.js', true),
         );
         $assetUrl = rtrim(trim($this->getAbsoluteWebPath($resourcesUrl)), '/') . '/';
 
@@ -52,7 +52,7 @@ class StencilViewHelper extends AbstractTagBasedViewHelper
 
                 return sprintf('%1$s"%2$s"', $matches['import'], $fileUri);
             },
-            $javaScriptContent
+            $javaScriptContent,
         );
 
         $javaScriptContent = preg_replace_callback(
@@ -63,25 +63,26 @@ class StencilViewHelper extends AbstractTagBasedViewHelper
 
                 return sprintf('%1$s"%2$s"', $matches['import'], $fileUri);
             },
-            (string) $javaScriptContent
+            (string) $javaScriptContent,
         );
 
         $javaScriptContent = str_replace(
             'sourceMappingURL=',
             sprintf('sourceMappingURL=%s', $assetUrl),
-            (string) $javaScriptContent
+            (string) $javaScriptContent,
         );
 
-        $result .= implode(
-            PHP_EOL,
-            array_map(
-                fn ($fileUri): string => sprintf(
-                    '<link href="%s" rel="modulepreload" />',
-                    $this->getAbsoluteWebPath($fileUri)
+        $result .=
+            implode(
+                PHP_EOL,
+                array_map(
+                    fn($fileUri): string => sprintf(
+                        '<link href="%s" rel="modulepreload" />',
+                        $this->getAbsoluteWebPath($fileUri),
+                    ),
+                    array_unique($filesToPreload),
                 ),
-                array_unique($filesToPreload)
-            )
-        ) . PHP_EOL;
+            ) . PHP_EOL;
 
         $this->tag->addAttribute('type', 'module');
         $this->tag->addAttribute('data-resources-url', $assetUrl);
@@ -127,9 +128,7 @@ class StencilViewHelper extends AbstractTagBasedViewHelper
 
         $baseUri = $this->getBaseUri();
 
-        return (string) (new Uri($file))
-            ->withScheme('https')
-            ->withHost($baseUri->getHost());
+        return (string) (new Uri($file))->withScheme('https')->withHost($baseUri->getHost());
     }
 
     public function getBaseUri(): UriInterface

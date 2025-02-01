@@ -44,10 +44,9 @@ class XhrCacheViewHelper extends AbstractTagBasedViewHelper
             $data = $data->toArray();
         }
 
-        $url = $this->hasArgument('url') ? \json_encode(
-            $this->arguments['url'],
-            JSON_THROW_ON_ERROR
-        ) : 'window.location.href';
+        $url = $this->hasArgument('url')
+            ? \json_encode($this->arguments['url'], JSON_THROW_ON_ERROR)
+            : 'window.location.href';
         $data = \json_encode($data, Environment::getContext()->isDevelopment() ? JSON_PRETTY_PRINT : 0);
 
         $replace = [

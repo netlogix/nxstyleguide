@@ -62,14 +62,16 @@ class FileContentViewHelper extends AbstractViewHelper
                     $content = preg_replace_callback(
                         '~sourceMappingURL=(?<fileName>[^"]+.css)\.map~m',
                         function ($matches): string {
-                            $fileUri = PathUtility::getAbsoluteWebPath(GeneralUtility::getFileAbsFileName($this->arguments['file']));
+                            $fileUri = PathUtility::getAbsoluteWebPath(
+                                GeneralUtility::getFileAbsFileName($this->arguments['file']),
+                            );
                             $fileUri = (string) (new Uri('/' . rtrim($fileUri, '/')))
                                 ->withScheme('https')
                                 ->withHost($_SERVER['CDN_BASE'] ?? $_SERVER['HTTP_HOST']);
 
                             return sprintf('sourceMappingURL=%1$s.map', $fileUri);
                         },
-                        $content
+                        $content,
                     );
 
                     break;
