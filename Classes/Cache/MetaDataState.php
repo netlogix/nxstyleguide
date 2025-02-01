@@ -10,7 +10,6 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 readonly class MetaDataState extends \TYPO3\CMS\Frontend\Cache\MetaDataState
 {
-
     public function getState(): array
     {
         $state = parent::getState();

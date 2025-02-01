@@ -16,14 +16,21 @@ class XhrCacheViewHelperTest extends UnitTestCase
     #[Test]
     public function initializeArguments_should_registerArguments(): void
     {
-        $subject = $this->getAccessibleMock(XhrCacheViewHelper::class, ['registerArgument'], [$this->getPageRendererMock()]);
-        $subject->expects($this->exactly(2))
+        $subject = $this->getAccessibleMock(
+            XhrCacheViewHelper::class,
+            ['registerArgument'],
+            [$this->getPageRendererMock()],
+        );
+        $subject
+            ->expects($this->exactly(2))
             ->method('registerArgument')
-            ->willReturnCallback(static fn ($name, $type, $description, $required) => match (true) {
-                $name === 'url' && $type === 'string' && $description === '' && $required === false => null,
-                $name === 'content' && $type === 'mixed' && $description === '' && $required === true => null,
-                default => throw new LogicException()
-            });
+            ->willReturnCallback(
+                static fn($name, $type, $description, $required) => match (true) {
+                    $name === 'url' && $type === 'string' && $description === '' && $required === false => null,
+                    $name === 'content' && $type === 'mixed' && $description === '' && $required === true => null,
+                    default => throw new LogicException(),
+                },
+            );
 
         $subject->initializeArguments();
     }
@@ -61,11 +68,9 @@ class XhrCacheViewHelperTest extends UnitTestCase
     #[Test]
     public function should_convert_data_to_array_if_QueryResultInterface(): void
     {
-        $queryResult = $this->getMockBuilder(QueryResultInterface::class)
-            ->getMock();
+        $queryResult = $this->getMockBuilder(QueryResultInterface::class)->getMock();
 
-        $queryResult->method('toArray')
-            ->willReturn([['1'], ['2']]);
+        $queryResult->method('toArray')->willReturn([['1'], ['2']]);
 
         $subject = new XhrCacheViewHelper($this->getPageRendererMock());
         $subject->setArguments([
@@ -78,8 +83,6 @@ class XhrCacheViewHelperTest extends UnitTestCase
 
     private function getPageRendererMock(): PageRenderer
     {
-        return $this->getMockBuilder(PageRenderer::class)
-            ->disableOriginalConstructor()
-            ->getMock();
+        return $this->getMockBuilder(PageRenderer::class)->disableOriginalConstructor()->getMock();
     }
 }

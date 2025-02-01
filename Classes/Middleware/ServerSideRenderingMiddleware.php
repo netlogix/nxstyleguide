@@ -23,12 +23,10 @@ readonly class ServerSideRenderingMiddleware implements MiddlewareInterface
     public function __construct(
         private RequestFactoryInterface $requestFactory,
         private StreamFactoryInterface $streamFactory,
-        #[Autowire(service: 'guzzle_http_client_with_timeout')]
-        private ClientInterface $client,
+        #[Autowire(service: 'guzzle_http_client_with_timeout')] private ClientInterface $client,
         private PageRenderer $pageRenderer,
         private TimeTracker $timeTracker,
-    ) {
-    }
+    ) {}
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
@@ -42,10 +40,7 @@ readonly class ServerSideRenderingMiddleware implements MiddlewareInterface
             return $response;
         }
 
-        if (
-            array_key_exists('type', $request->getQueryParams())
-            && $request->getQueryParams()['type'] > 0
-        ) {
+        if (array_key_exists('type', $request->getQueryParams()) && $request->getQueryParams()['type'] > 0) {
             return $response;
         }
 
@@ -64,9 +59,7 @@ readonly class ServerSideRenderingMiddleware implements MiddlewareInterface
         try {
             $res = $this->client->sendRequest($req);
 
-            return ($res->getStatusCode() === 200)
-                ? $response->withBody($res->getBody())
-                : $response;
+            return $res->getStatusCode() === 200 ? $response->withBody($res->getBody()) : $response;
         } catch (Exception) {
             return $response;
         } finally {

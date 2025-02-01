@@ -64,8 +64,12 @@ class PictureViewHelper extends AbstractTagBasedViewHelper
     public function render(): string
     {
         if (
-            ($this->arguments['path'] === '' && $this->arguments['image'] === null && $this->arguments['pageData'] === []) ||
-            ($this->arguments['path'] !== '' && $this->arguments['image'] !== null && $this->arguments['pageData'] !== [])
+            ($this->arguments['path'] === '' &&
+                $this->arguments['image'] === null &&
+                $this->arguments['pageData'] === []) ||
+            ($this->arguments['path'] !== '' &&
+                $this->arguments['image'] !== null &&
+                $this->arguments['pageData'] !== [])
         ) {
             throw new Exception('You must either specify a string path, a File object or page data.', 1586532065);
         }
@@ -75,7 +79,7 @@ class PictureViewHelper extends AbstractTagBasedViewHelper
                 $image = $this->imageService->getImage(
                     (string) $this->arguments['path'],
                     $this->arguments['image'],
-                    false
+                    false,
                 );
             } else {
                 $image = $this->getImageByPageData($this->arguments['pageData']);
@@ -93,7 +97,7 @@ class PictureViewHelper extends AbstractTagBasedViewHelper
             if ($this->isSvg($image)) {
                 $width = $image->getProperty('width');
                 $aspectRatio = $this->getAspectRatio($image);
-                $srcWidth = $this->arguments['src']['width'] ?? $this->arguments['src']['maxWidth'] ?? $width;
+                $srcWidth = $this->arguments['src']['width'] ?? ($this->arguments['src']['maxWidth'] ?? $width);
                 if ($width > $srcWidth) {
                     $width = $srcWidth;
                 }
@@ -114,11 +118,15 @@ class PictureViewHelper extends AbstractTagBasedViewHelper
                     '--aspect-ratio: %1$s;--width: %2$spx; %3$s',
                     $aspectRatio . '%',
                     $width,
-                    $this->arguments['style'] ?? ''
-                )
+                    $this->arguments['style'] ?? '',
+                ),
             );
             $this->tag->setContent(
-                implode(PHP_EOL, [$this->getSourceSets($image), $this->getImgTag($image), $this->renderChildren()])
+                implode(PHP_EOL, [
+                    $this->getSourceSets($image),
+                    $this->getImgTag($image),
+                    $this->renderChildren(),
+                ]),
             );
 
             return $this->tag->render();
@@ -195,9 +203,12 @@ class PictureViewHelper extends AbstractTagBasedViewHelper
         if ($image->hasProperty('crop') && $image->getProperty('crop')) {
             $cropString = $image->getProperty('crop');
             $cropVariantCollection = CropVariantCollection::create($cropString);
-            $cropVariant = $processingInstructions['cropVariant'] ?? $this->arguments['cropVariant'] ?? 'default';
+            $cropVariant =
+                $processingInstructions['cropVariant'] ?? ($this->arguments['cropVariant'] ?? 'default');
             $cropArea = $cropVariantCollection->getCropArea($cropVariant);
-            $processingInstructions['crop'] = $cropArea->isEmpty() ? null : $cropArea->makeAbsoluteBasedOnFile($image);
+            $processingInstructions['crop'] = $cropArea->isEmpty()
+                ? null
+                : $cropArea->makeAbsoluteBasedOnFile($image);
         }
 
         if (!empty($this->arguments['fileExtension'] ?? '')) {
@@ -218,12 +229,14 @@ class PictureViewHelper extends AbstractTagBasedViewHelper
 
     private function getImageAlt(FileInterface $image): string
     {
-        return $this->arguments['additionalAttributes']['alt'] ?? $image->getProperty('alternative') ?? $this->getImageTitle($image) ?? '';
+        return $this->arguments['additionalAttributes']['alt'] ??
+            ($image->getProperty('alternative') ?? ($this->getImageTitle($image) ?? ''));
     }
 
     private function getImageTitle(FileInterface $image): string
     {
-        return $this->arguments['imageTitle'] ?? $this->arguments['title'] ?? $image->getProperty('title') ?? '';
+        return $this->arguments['imageTitle'] ??
+            ($this->arguments['title'] ?? ($image->getProperty('title') ?? ''));
     }
 
     private function isImage(FileInterface $image): bool
@@ -245,7 +258,7 @@ class PictureViewHelper extends AbstractTagBasedViewHelper
         $height = (int) $image->getProperty('height');
 
         if ($width === 0 || $height === 0) {
-            return 1.00;
+            return 1.0;
         }
 
         return round($image->getProperty('width') / $image->getProperty('height'), 2);

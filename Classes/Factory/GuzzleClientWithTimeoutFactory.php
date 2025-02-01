@@ -17,15 +17,14 @@ class GuzzleClientWithTimeoutFactory
     public static function getClient(): ClientInterface
     {
         $httpOptions = $GLOBALS['TYPO3_CONF_VARS']['HTTP'];
-        $httpOptions['verify'] = filter_var(
-            $httpOptions['verify'],
-            FILTER_VALIDATE_BOOLEAN,
-            FILTER_NULL_ON_FAILURE
-        ) ?? $httpOptions['verify'];
+        $httpOptions['verify'] =
+            filter_var($httpOptions['verify'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ??
+            $httpOptions['verify'];
 
-        if (isset($GLOBALS['TYPO3_CONF_VARS']['HTTP']['handler']) && is_array(
-            $GLOBALS['TYPO3_CONF_VARS']['HTTP']['handler']
-        )) {
+        if (
+            isset($GLOBALS['TYPO3_CONF_VARS']['HTTP']['handler']) &&
+            is_array($GLOBALS['TYPO3_CONF_VARS']['HTTP']['handler'])
+        ) {
             $stack = HandlerStack::create();
             foreach ($GLOBALS['TYPO3_CONF_VARS']['HTTP']['handler'] ?? [] as $name => $handler) {
                 $stack->push($handler, (string) $name);
