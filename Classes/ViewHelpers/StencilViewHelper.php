@@ -7,6 +7,7 @@ namespace Netlogix\Nxstyleguide\ViewHelpers;
 use InvalidArgumentException;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\UriInterface;
+use Throwable;
 use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Http\Uri;
 use TYPO3\CMS\Core\Site\Entity\Site;
@@ -38,9 +39,7 @@ class StencilViewHelper extends AbstractTagBasedViewHelper
         $namespace = trim((string) $this->arguments['stencilNamespace']);
         $resourcesUrl = rtrim(trim((string) $this->arguments['resourcesUrl']), '/') . '/';
 
-        $javaScriptContent = (string) $this->getUrl(
-            $this->getAbsoluteWebPath($resourcesUrl . $namespace . '.esm.js', true)
-        );
+        $javaScriptContent = $this->getUrl($resourcesUrl . $namespace . '.esm.js');
         $assetUrl = rtrim(trim($this->getAbsoluteWebPath($resourcesUrl)), '/') . '/';
 
         $filesToPreload = [];
@@ -86,7 +85,11 @@ class StencilViewHelper extends AbstractTagBasedViewHelper
         $this->tag->addAttribute('type', 'module');
         $this->tag->addAttribute('data-resources-url', $assetUrl);
         $this->tag->addAttribute('data-stencil-namespace', $namespace);
-        $this->tag->setContent($javaScriptContent);
+        if ($javaScriptContent === '') {
+            $this->tag->addAttribute('src', $this->getAbsoluteWebPath($resourcesUrl . $namespace . '.esm.js', true));
+        } else {
+            $this->tag->setContent($javaScriptContent);
+        }
         $this->tag->forceClosingTag(true);
         $result .= $this->tag->render() . PHP_EOL;
 
@@ -99,9 +102,16 @@ class StencilViewHelper extends AbstractTagBasedViewHelper
         return $result . ($this->tag->render() . PHP_EOL);
     }
 
-    protected function getUrl(string $url): ?string
+    protected function getUrl(string $url): string
     {
-        return GeneralUtility::getUrl($url) ?? null;
+        try {
+            if (PathUtility::isExtensionPath($url)) {
+                $url = GeneralUtility::getFileAbsFileName($url);
+            }
+            return (string) (GeneralUtility::getUrl($url) ?: '');
+        } catch (Throwable $t) {
+            return '';
+        }
     }
 
     private function getAbsoluteWebPath(string $file, bool $cacheBreaker = false): string
