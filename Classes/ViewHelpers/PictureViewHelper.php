@@ -112,7 +112,7 @@ class PictureViewHelper extends AbstractTagBasedViewHelper
                 'style',
                 sprintf(
                     '--aspect-ratio: %1$s;--width: %2$spx; %3$s',
-                    $aspectRatio . '%',
+                    $aspectRatio,
                     $width,
                     $this->arguments['style'] ?? ''
                 )
