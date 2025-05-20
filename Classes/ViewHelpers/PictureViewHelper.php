@@ -45,6 +45,7 @@ class PictureViewHelper extends AbstractTagBasedViewHelper
     public function initializeArguments(): void
     {
         parent::initializeArguments();
+        $this->registerArgument('class', 'string', 'CSS class(es) for this element');
         $this->registerArgument('path', 'string', 'File path', false, '');
         $this->registerArgument('pageData', 'array', 'Page data', false, []);
         $this->registerArgument('image', 'object', 'a FAL object');
