@@ -67,7 +67,10 @@ readonly class ServerSideRenderingMiddleware implements MiddlewareInterface
             return ($res->getStatusCode() === 200)
                 ? $response->withBody($res->getBody())
                 : $response;
-        } catch (Exception) {
+        } catch (Exception $e) {
+            if (function_exists('\Sentry\captureException')) {
+                \Sentry\captureException($e);
+            }
             return $response;
         } finally {
             $this->timeTracker->pull();
