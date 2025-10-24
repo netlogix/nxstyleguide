@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Netlogix\Nxstyleguide\ViewHelpers;
 
+use Override;
 use InvalidArgumentException;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\UriInterface;
@@ -25,6 +26,7 @@ class StencilViewHelper extends AbstractTagBasedViewHelper
      */
     protected $tagName = 'script';
 
+    #[Override]
     public function initializeArguments(): void
     {
         parent::initializeArguments();
@@ -33,6 +35,7 @@ class StencilViewHelper extends AbstractTagBasedViewHelper
         $this->registerArgument('components', 'array', 'Components to preload', false, []);
     }
 
+    #[Override]
     public function render(): string
     {
         $result = '';
@@ -51,7 +54,7 @@ class StencilViewHelper extends AbstractTagBasedViewHelper
 
                 return sprintf('%1$s"%2$s"', $matches['import'], $fileUri);
             },
-            $javaScriptContent
+            $javaScriptContent,
         );
 
         $javaScriptContent = preg_replace_callback(
@@ -62,34 +65,39 @@ class StencilViewHelper extends AbstractTagBasedViewHelper
 
                 return sprintf('%1$s"%2$s"', $matches['import'], $fileUri);
             },
-            (string) $javaScriptContent
+            (string) $javaScriptContent,
         );
 
         $javaScriptContent = str_replace(
             'sourceMappingURL=',
             sprintf('sourceMappingURL=%s', $assetUrl),
-            (string) $javaScriptContent
+            (string) $javaScriptContent,
         );
 
-        $result .= implode(
-            PHP_EOL,
-            array_map(
-                fn ($fileUri): string => sprintf(
-                    '<link href="%s" rel="modulepreload" />',
-                    $this->getAbsoluteWebPath($fileUri)
+        $result .=
+            implode(
+                PHP_EOL,
+                array_map(
+                    fn(string $fileUri): string => sprintf(
+                        '<link href="%s" rel="modulepreload" />',
+                        $this->getAbsoluteWebPath($fileUri),
+                    ),
+                    array_unique($filesToPreload),
                 ),
-                array_unique($filesToPreload)
-            )
-        ) . PHP_EOL;
+            ) . PHP_EOL;
 
         $this->tag->addAttribute('type', 'module');
         $this->tag->addAttribute('data-resources-url', $assetUrl);
         $this->tag->addAttribute('data-stencil-namespace', $namespace);
         if ($javaScriptContent === '') {
-            $this->tag->addAttribute('src', $this->getAbsoluteWebPath($resourcesUrl . $namespace . '.esm.js', true));
+            $this->tag->addAttribute(
+                'src',
+                $this->getAbsoluteWebPath($resourcesUrl . $namespace . '.esm.js', true),
+            );
         } else {
             $this->tag->setContent($javaScriptContent);
         }
+
         $this->tag->forceClosingTag(true);
         $result .= $this->tag->render() . PHP_EOL;
 
@@ -108,8 +116,9 @@ class StencilViewHelper extends AbstractTagBasedViewHelper
             if (PathUtility::isExtensionPath($url)) {
                 $url = GeneralUtility::getFileAbsFileName($url);
             }
-            return (string) (GeneralUtility::getUrl($url) ?: '');
-        } catch (Throwable $t) {
+
+            return GeneralUtility::getUrl($url) ?: '';
+        } catch (Throwable) {
             return '';
         }
     }
@@ -137,9 +146,7 @@ class StencilViewHelper extends AbstractTagBasedViewHelper
 
         $baseUri = $this->getBaseUri();
 
-        return (string) (new Uri($file))
-            ->withScheme('https')
-            ->withHost($baseUri->getHost());
+        return (string) (new Uri($file))->withScheme('https')->withHost($baseUri->getHost());
     }
 
     public function getBaseUri(): UriInterface

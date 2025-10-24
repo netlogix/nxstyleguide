@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace Netlogix\Nxstyleguide\Cache;
 
+use Override;
 use ReflectionProperty;
 use TYPO3\CMS\Core\Page\PageRenderer;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 readonly class MetaDataState extends \TYPO3\CMS\Frontend\Cache\MetaDataState
 {
-
+    #[Override]
     public function getState(): array
     {
         $state = parent::getState();
@@ -20,6 +21,7 @@ readonly class MetaDataState extends \TYPO3\CMS\Frontend\Cache\MetaDataState
         return $state;
     }
 
+    #[Override]
     public function updateState(array $state): void
     {
         parent::updateState($state);
@@ -59,7 +61,6 @@ readonly class MetaDataState extends \TYPO3\CMS\Frontend\Cache\MetaDataState
     {
         $subject = GeneralUtility::makeInstance(PageRenderer::class);
         $property = new ReflectionProperty($subject, $propertyName);
-        $property->setAccessible(true);
         return $property->getValue($subject);
     }
 
@@ -67,7 +68,6 @@ readonly class MetaDataState extends \TYPO3\CMS\Frontend\Cache\MetaDataState
     {
         $subject = GeneralUtility::makeInstance(PageRenderer::class);
         $property = new ReflectionProperty($subject, $propertyName);
-        $property->setAccessible(true);
         $property->setValue($subject, $value);
     }
 }
