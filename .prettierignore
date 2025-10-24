@@ -1,0 +1,3 @@
+Tests/**/Fixtures/**/*.js
+Tests/**/Fixtures/**/*.css
+Tests/**/Fixtures/**/*.json

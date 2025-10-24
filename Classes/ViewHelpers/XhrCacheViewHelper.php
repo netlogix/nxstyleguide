@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Netlogix\Nxstyleguide\ViewHelpers;
 
+use Override;
 use TYPO3\CMS\Core\Core\Environment;
 use TYPO3\CMS\Core\Page\PageRenderer;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
@@ -20,12 +21,14 @@ class XhrCacheViewHelper extends AbstractTagBasedViewHelper
         $this->pageRenderer ??= GeneralUtility::makeInstance(PageRenderer::class);
     }
 
+    #[Override]
     public function initializeArguments(): void
     {
         $this->registerArgument('url', 'string', '', false);
         $this->registerArgument('content', 'mixed', '', true, null);
     }
 
+    #[Override]
     public function render(): string
     {
         $body = <<<'JavaScript'
@@ -44,10 +47,9 @@ class XhrCacheViewHelper extends AbstractTagBasedViewHelper
             $data = $data->toArray();
         }
 
-        $url = $this->hasArgument('url') ? \json_encode(
-            $this->arguments['url'],
-            JSON_THROW_ON_ERROR
-        ) : 'window.location.href';
+        $url = $this->hasArgument('url')
+            ? \json_encode($this->arguments['url'], JSON_THROW_ON_ERROR)
+            : 'window.location.href';
         $data = \json_encode($data, Environment::getContext()->isDevelopment() ? JSON_PRETTY_PRINT : 0);
 
         $replace = [

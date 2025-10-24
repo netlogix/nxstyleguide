@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Netlogix\Nxstyleguide\ViewHelpers;
 
+use Override;
 use GuzzleHttp\Psr7\Uri;
 use function mime_content_type;
 use function preg_match;
@@ -31,6 +32,7 @@ class FileContentViewHelper extends AbstractViewHelper
         $this->registerArgument('baseUri', 'string', 'base uri to replace assets in css file', false, false);
     }
 
+    #[Override]
     public function render(): string
     {
         try {
@@ -62,14 +64,16 @@ class FileContentViewHelper extends AbstractViewHelper
                     $content = preg_replace_callback(
                         '~sourceMappingURL=(?<fileName>[^"]+.css)\.map~m',
                         function ($matches): string {
-                            $fileUri = PathUtility::getAbsoluteWebPath(GeneralUtility::getFileAbsFileName($this->arguments['file']));
+                            $fileUri = PathUtility::getAbsoluteWebPath(
+                                GeneralUtility::getFileAbsFileName($this->arguments['file']),
+                            );
                             $fileUri = (string) (new Uri('/' . rtrim($fileUri, '/')))
                                 ->withScheme('https')
                                 ->withHost($_SERVER['CDN_BASE'] ?? $_SERVER['HTTP_HOST']);
 
                             return sprintf('sourceMappingURL=%1$s.map', $fileUri);
                         },
-                        $content
+                        $content,
                     );
 
                     break;
@@ -80,7 +84,7 @@ class FileContentViewHelper extends AbstractViewHelper
             if ($content && $dataUri) {
                 $content = sprintf('data:%1$s;base64,%2$s', $mimeType, base64_encode($content));
             }
-        } catch (Throwable $t) {
+        } catch (Throwable) {
         }
 
         return trim((string) ($content ?? ''));

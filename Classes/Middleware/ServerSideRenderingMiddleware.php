@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Netlogix\Nxstyleguide\Middleware;
 
+use function Sentry\captureException;
 use Exception;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
@@ -23,12 +24,10 @@ readonly class ServerSideRenderingMiddleware implements MiddlewareInterface
     public function __construct(
         private RequestFactoryInterface $requestFactory,
         private StreamFactoryInterface $streamFactory,
-        #[Autowire(service: 'guzzle_http_client_with_timeout')]
-        private ClientInterface $client,
+        #[Autowire(service: 'guzzle_http_client_with_timeout')] private ClientInterface $client,
         private PageRenderer $pageRenderer,
         private TimeTracker $timeTracker,
-    ) {
-    }
+    ) {}
 
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
@@ -42,10 +41,7 @@ readonly class ServerSideRenderingMiddleware implements MiddlewareInterface
             return $response;
         }
 
-        if (
-            array_key_exists('type', $request->getQueryParams())
-            && $request->getQueryParams()['type'] > 0
-        ) {
+        if (array_key_exists('type', $request->getQueryParams()) && $request->getQueryParams()['type'] > 0) {
             return $response;
         }
 
@@ -64,13 +60,12 @@ readonly class ServerSideRenderingMiddleware implements MiddlewareInterface
         try {
             $res = $this->client->sendRequest($req);
 
-            return ($res->getStatusCode() === 200)
-                ? $response->withBody($res->getBody())
-                : $response;
-        } catch (Exception $e) {
+            return $res->getStatusCode() === 200 ? $response->withBody($res->getBody()) : $response;
+        } catch (Exception $exception) {
             if (function_exists('\Sentry\captureException')) {
-                \Sentry\captureException($e);
+                captureException($exception);
             }
+
             return $response;
         } finally {
             $this->timeTracker->pull();
@@ -80,14 +75,12 @@ readonly class ServerSideRenderingMiddleware implements MiddlewareInterface
     private function getLabels(): array
     {
         $method = new ReflectionMethod($this->pageRenderer, 'parseLanguageLabelsForJavaScript');
-        $method->setAccessible(true);
         return $method->invoke($this->pageRenderer);
     }
 
     private function getSettings(): array
     {
         $property = new ReflectionProperty($this->pageRenderer, 'inlineSettings');
-        $property->setAccessible(true);
         return $property->getValue($this->pageRenderer);
     }
 }
