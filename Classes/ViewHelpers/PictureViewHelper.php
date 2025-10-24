@@ -45,7 +45,6 @@ class PictureViewHelper extends AbstractTagBasedViewHelper
     public function initializeArguments(): void
     {
         parent::initializeArguments();
-        $this->registerArgument('class', 'string', 'CSS class(es) for this element');
         $this->registerArgument('path', 'string', 'File path', false, '');
         $this->registerArgument('pageData', 'array', 'Page data', false, []);
         $this->registerArgument('image', 'object', 'a FAL object');
@@ -76,7 +75,7 @@ class PictureViewHelper extends AbstractTagBasedViewHelper
                 $image = $this->imageService->getImage(
                     (string) $this->arguments['path'],
                     $this->arguments['image'],
-                    false
+                    false,
                 );
             } else {
                 $image = $this->getImageByPageData($this->arguments['pageData']);
@@ -85,10 +84,10 @@ class PictureViewHelper extends AbstractTagBasedViewHelper
                 }
             }
 
-            $this->tag->addAttribute('class', $this->arguments['class'] ?? '');
+            $this->tag->addAttribute('class', $this->additionalArguments['class'] ?? '');
 
             if (!empty($this->arguments['aspectRatio'])) {
-                $this->tag->addAttribute('class', ($this->arguments['class'] ?? '') . ' ratio');
+                $this->tag->addAttribute('class', ($this->additionalArguments['class'] ?? '') . ' ratio');
             }
 
             if ($this->isSvg($image)) {
@@ -115,8 +114,8 @@ class PictureViewHelper extends AbstractTagBasedViewHelper
                     '--aspect-ratio: %1$s;--width: %2$spx; %3$s',
                     $aspectRatio,
                     $width,
-                    $this->arguments['style'] ?? ''
-                )
+                    $this->additionalArguments['style'] ?? '',
+                ),
             );
             $this->tag->setContent(
                 implode(PHP_EOL, [$this->getSourceSets($image), $this->getImgTag($image), $this->renderChildren()])
@@ -224,7 +223,8 @@ class PictureViewHelper extends AbstractTagBasedViewHelper
 
     private function getImageTitle(FileInterface $image): string
     {
-        return $this->arguments['imageTitle'] ?? $this->arguments['title'] ?? $image->getProperty('title') ?? '';
+        return $this->arguments['imageTitle'] ??
+            ($this->additionalArguments['title'] ?? ($image->getProperty('title') ?? ''));
     }
 
     private function isImage(FileInterface $image): bool
