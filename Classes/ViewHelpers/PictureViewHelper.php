@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Netlogix\Nxstyleguide\ViewHelpers;
 
+use Override;
 use InvalidArgumentException;
 use Psr\Http\Message\ServerRequestInterface;
 use RuntimeException;
@@ -42,6 +43,7 @@ class PictureViewHelper extends AbstractTagBasedViewHelper
         $this->imageService = $imageService ?? GeneralUtility::makeInstance(ImageService::class);
     }
 
+    #[Override]
     public function initializeArguments(): void
     {
         parent::initializeArguments();
@@ -61,11 +63,16 @@ class PictureViewHelper extends AbstractTagBasedViewHelper
         $this->registerArgument('aspectRatio', 'float', 'Custom aspect ratio to use');
     }
 
+    #[Override]
     public function render(): string
     {
         if (
-            ($this->arguments['path'] === '' && $this->arguments['image'] === null && $this->arguments['pageData'] === []) ||
-            ($this->arguments['path'] !== '' && $this->arguments['image'] !== null && $this->arguments['pageData'] !== [])
+            ($this->arguments['path'] === '' &&
+                $this->arguments['image'] === null &&
+                $this->arguments['pageData'] === []) ||
+            ($this->arguments['path'] !== '' &&
+                $this->arguments['image'] !== null &&
+                $this->arguments['pageData'] !== [])
         ) {
             throw new Exception('You must either specify a string path, a File object or page data.', 1586532065);
         }
@@ -93,7 +100,7 @@ class PictureViewHelper extends AbstractTagBasedViewHelper
             if ($this->isSvg($image)) {
                 $width = $image->getProperty('width');
                 $aspectRatio = $this->getAspectRatio($image);
-                $srcWidth = $this->arguments['src']['width'] ?? $this->arguments['src']['maxWidth'] ?? $width;
+                $srcWidth = $this->arguments['src']['width'] ?? ($this->arguments['src']['maxWidth'] ?? $width);
                 if ($width > $srcWidth) {
                     $width = $srcWidth;
                 }
@@ -118,7 +125,11 @@ class PictureViewHelper extends AbstractTagBasedViewHelper
                 ),
             );
             $this->tag->setContent(
-                implode(PHP_EOL, [$this->getSourceSets($image), $this->getImgTag($image), $this->renderChildren()])
+                implode(PHP_EOL, [
+                    $this->getSourceSets($image),
+                    $this->getImgTag($image),
+                    $this->renderChildren(),
+                ]),
             );
 
             return $this->tag->render();
@@ -195,9 +206,12 @@ class PictureViewHelper extends AbstractTagBasedViewHelper
         if ($image->hasProperty('crop') && $image->getProperty('crop')) {
             $cropString = $image->getProperty('crop');
             $cropVariantCollection = CropVariantCollection::create($cropString);
-            $cropVariant = $processingInstructions['cropVariant'] ?? $this->arguments['cropVariant'] ?? 'default';
+            $cropVariant =
+                $processingInstructions['cropVariant'] ?? ($this->arguments['cropVariant'] ?? 'default');
             $cropArea = $cropVariantCollection->getCropArea($cropVariant);
-            $processingInstructions['crop'] = $cropArea->isEmpty() ? null : $cropArea->makeAbsoluteBasedOnFile($image);
+            $processingInstructions['crop'] = $cropArea->isEmpty()
+                ? null
+                : $cropArea->makeAbsoluteBasedOnFile($image);
         }
 
         if (!empty($this->arguments['fileExtension'] ?? '')) {
@@ -218,7 +232,8 @@ class PictureViewHelper extends AbstractTagBasedViewHelper
 
     private function getImageAlt(FileInterface $image): string
     {
-        return $this->arguments['additionalAttributes']['alt'] ?? $image->getProperty('alternative') ?? $this->getImageTitle($image) ?? '';
+        return $this->arguments['additionalAttributes']['alt'] ??
+            ($image->getProperty('alternative') ?? ($this->getImageTitle($image) ?? ''));
     }
 
     private function getImageTitle(FileInterface $image): string
@@ -246,7 +261,7 @@ class PictureViewHelper extends AbstractTagBasedViewHelper
         $height = (int) $image->getProperty('height');
 
         if ($width === 0 || $height === 0) {
-            return 1.00;
+            return 1.0;
         }
 
         return round($image->getProperty('width') / $image->getProperty('height'), 2);

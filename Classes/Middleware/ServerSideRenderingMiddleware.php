@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Netlogix\Nxstyleguide\Middleware;
 
+use function Sentry\captureException;
 use Exception;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
@@ -62,7 +63,7 @@ readonly class ServerSideRenderingMiddleware implements MiddlewareInterface
             return $res->getStatusCode() === 200 ? $response->withBody($res->getBody()) : $response;
         } catch (Exception $exception) {
             if (function_exists('\Sentry\captureException')) {
-                \Sentry\captureException($exception);
+                captureException($exception);
             }
 
             return $response;
