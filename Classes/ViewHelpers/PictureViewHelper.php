@@ -10,11 +10,11 @@ use RuntimeException;
 use Throwable;
 use TYPO3\CMS\Core\Http\ServerRequestFactory;
 use TYPO3\CMS\Core\Imaging\ImageManipulation\CropVariantCollection;
-use TYPO3\CMS\Core\Resource\AbstractFile;
 use TYPO3\CMS\Core\Resource\Exception\ResourceDoesNotExistException;
 use TYPO3\CMS\Core\Resource\FileInterface;
 use TYPO3\CMS\Core\Resource\FileReference;
 use TYPO3\CMS\Core\Resource\FileRepository;
+use TYPO3\CMS\Core\Resource\FileType;
 use TYPO3\CMS\Core\Resource\ProcessedFile;
 use TYPO3\CMS\Core\Routing\PageArguments;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
@@ -229,7 +229,7 @@ class PictureViewHelper extends AbstractTagBasedViewHelper
 
     private function isImage(FileInterface $image): bool
     {
-        return $image->getType() === AbstractFile::FILETYPE_IMAGE;
+        return $image->getType() === FileType::IMAGE->value;
     }
 
     private function isSvg(FileInterface $image): bool
