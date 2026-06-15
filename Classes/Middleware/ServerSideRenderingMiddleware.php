@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Netlogix\Nxstyleguide\Middleware;
 
-use function Sentry\captureException;
 use Exception;
+use GuzzleHttp\Exception\ConnectException;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -18,6 +18,8 @@ use ReflectionProperty;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use TYPO3\CMS\Core\Page\PageRenderer;
 use TYPO3\CMS\Core\TimeTracker\TimeTracker;
+
+use function Sentry\captureException;
 
 readonly class ServerSideRenderingMiddleware implements MiddlewareInterface
 {
@@ -62,7 +64,7 @@ readonly class ServerSideRenderingMiddleware implements MiddlewareInterface
 
             return $res->getStatusCode() === 200 ? $response->withBody($res->getBody()) : $response;
         } catch (Exception $exception) {
-            if (function_exists('\Sentry\captureException')) {
+            if (function_exists('\Sentry\captureException') && !($exception instanceof ConnectException)) {
                 captureException($exception);
             }
 
