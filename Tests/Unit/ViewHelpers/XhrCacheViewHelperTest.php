@@ -12,7 +12,7 @@ use TYPO3\CMS\Extbase\Persistence\QueryResultInterface;
 use TYPO3\TestingFramework\Core\Unit\UnitTestCase;
 use TYPO3Fluid\Fluid\Core\Rendering\RenderingContext;
 
-class XhrCacheViewHelperTest extends UnitTestCase
+final class XhrCacheViewHelperTest extends UnitTestCase
 {
     #[Test]
     public function initializeArguments_should_registerArguments(): void
