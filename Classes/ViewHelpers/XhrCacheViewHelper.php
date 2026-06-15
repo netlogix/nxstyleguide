@@ -25,7 +25,7 @@ class XhrCacheViewHelper extends AbstractTagBasedViewHelper
     public function initializeArguments(): void
     {
         $this->registerArgument('url', 'string', '', false);
-        $this->registerArgument('content', 'mixed', '', true, null);
+        $this->registerArgument('content', 'mixed', '', true);
     }
 
     #[Override]
