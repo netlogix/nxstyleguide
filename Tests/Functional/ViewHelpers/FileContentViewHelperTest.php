@@ -9,7 +9,7 @@ use Netlogix\Nxstyleguide\ViewHelpers\FileContentViewHelper;
 use PHPUnit\Framework\Attributes\Test;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
-class FileContentViewHelperTest extends FunctionalTestCase
+final class FileContentViewHelperTest extends FunctionalTestCase
 {
     protected array $testExtensionsToLoad = [
         'typo3conf/ext/nxstyleguide/Tests/Functional/Fixtures/Extensions/nxwebsite',
@@ -24,35 +24,37 @@ class FileContentViewHelperTest extends FunctionalTestCase
             ->expects($this->exactly(5))
             ->method('registerArgument')
             ->willReturnCallback(
-                static fn($name, $type, $description, $required, $defaultValue): null => match (true) {
-                    $name === 'file' && $type === 'string' && $description === '' && $required === true => null,
-                    $name === 'arguments' &&
-                        $type === 'array' &&
-                        $description === 'The arguments for vsprintf' &&
-                        $required === false &&
-                        $defaultValue === []
-                        => null,
-                    $name === 'mimeType' &&
-                        $type === 'string' &&
-                        $description === 'Mime type of the external file' &&
-                        $required === false &&
-                        $defaultValue === ''
-                        => null,
-                    $name === 'dataUri' &&
-                        $type === 'boolean' &&
-                        $description === 'Base46 encode file as data uri' &&
-                        $required === false &&
-                        $defaultValue === false
-                        => null,
-                    $name === 'baseUri' &&
-                        $type === 'string' &&
-                        $description === 'base uri to replace assets in css file' &&
-                        $required === false &&
-                        $defaultValue === false
-                        => null,
-                    // default attributes
-                    in_array($name, ['additionalAttributes', 'data', 'aria'], true) => null,
-                    default => throw new LogicException($name),
+                static function ($name, $type, $description, $required, $defaultValue) use ($subject) {
+                    return match (true) {
+                        $name === 'file' && $type === 'string' && $description === '' && $required === true => $subject,
+                        $name === 'arguments' &&
+                            $type === 'array' &&
+                            $description === 'The arguments for vsprintf' &&
+                            $required === false &&
+                            $defaultValue === []
+                            => $subject,
+                        $name === 'mimeType' &&
+                            $type === 'string' &&
+                            $description === 'Mime type of the external file' &&
+                            $required === false &&
+                            $defaultValue === ''
+                            => $subject,
+                        $name === 'dataUri' &&
+                            $type === 'boolean' &&
+                            $description === 'Base46 encode file as data uri' &&
+                            $required === false &&
+                            $defaultValue === false
+                            => $subject,
+                        $name === 'baseUri' &&
+                            $type === 'string' &&
+                            $description === 'base uri to replace assets in css file' &&
+                            $required === false &&
+                            $defaultValue === false
+                            => $subject,
+                        // default attributes
+                        in_array($name, ['additionalAttributes', 'data', 'aria'], true) => $subject,
+                        default => throw new LogicException($name),
+                    };
                 },
             );
 

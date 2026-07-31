@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Netlogix\Nxstyleguide\Tests\Functional\ViewHelpers;
 
-use Override;
 use DOMDocument;
 use LogicException;
 use Netlogix\Nxstyleguide\ViewHelpers\StencilViewHelper;
@@ -15,13 +14,12 @@ use TYPO3\CMS\Core\Site\Entity\Site;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
-class StencilViewHelperTest extends FunctionalTestCase
+final class StencilViewHelperTest extends FunctionalTestCase
 {
     protected array $testExtensionsToLoad = [
         'typo3conf/ext/nxstyleguide/Tests/Functional/Fixtures/Extensions/nxwebsite',
     ];
 
-    #[Override]
     protected function tearDown(): void
     {
         unset($GLOBALS['TYPO3_REQUEST']);
@@ -29,31 +27,33 @@ class StencilViewHelperTest extends FunctionalTestCase
     }
 
     #[Test]
-    public function initializeArguments_should_registerArguments_and_registerUniversalTagAttributes(): void
+    public function initializeArguments_should_registerArguments(): void
     {
-        $subject = $this->getAccessibleMock(StencilViewHelper::class, [
-            'registerArgument',
-            'registerUniversalTagAttributes',
-        ]);
+        $subject = $this->getAccessibleMock(StencilViewHelper::class, ['registerArgument']);
 
         $subject
             ->expects($this->exactly(6))
             ->method('registerArgument')
             ->willReturnCallback(
-                static fn($name, $type, $description, $required, $defaultValue): null => match (true) {
-                    $name === 'resourcesUrl' && $type === 'string' && $description === '' && $required === true
-                        => null,
-                    $name === 'stencilNamespace' && $type === 'string' && $description === '' && $required === true
-                        => null,
-                    $name === 'components' &&
-                        $type === 'array' &&
-                        $description === 'Components to preload' &&
-                        $required === false &&
-                        $defaultValue === []
-                        => null,
-                    // default attributes
-                    in_array($name, ['additionalAttributes', 'data', 'aria'], true) => null,
-                    default => throw new LogicException($name),
+                static function ($name, $type, $description, $required, $defaultValue) use ($subject) {
+                    return match (true) {
+                        $name === 'resourcesUrl' && $type === 'string' && $description === '' && $required === true
+                            => $subject,
+                        $name === 'stencilNamespace' &&
+                            $type === 'string' &&
+                            $description === '' &&
+                            $required === true
+                            => $subject,
+                        $name === 'components' &&
+                            $type === 'array' &&
+                            $description === 'Components to preload' &&
+                            $required === false &&
+                            $defaultValue === []
+                            => $subject,
+                        // default attributes
+                        in_array($name, ['additionalAttributes', 'data', 'aria'], true) => $subject,
+                        default => throw new LogicException($name),
+                    };
                 },
             );
 
@@ -70,7 +70,7 @@ class StencilViewHelperTest extends FunctionalTestCase
         ]);
 
         $serverRequest->expects($this->atLeastOnce())->method('getAttribute')->willReturnCallback(
-            static fn($key): Site|int => match ($key) {
+            static fn(string $key): Site|int => match ($key) {
                 'applicationType' => SystemEnvironmentBuilder::REQUESTTYPE_FE,
                 'site' => $site,
             },
@@ -83,7 +83,7 @@ class StencilViewHelperTest extends FunctionalTestCase
         $subject
             ->expects($this->once())
             ->method('getUrl')
-            ->willReturnCallback(static function ($url): string|false|null {
+            ->willReturnCallback(static function (string $url): string|false|null {
                 if (str_contains($url, 'Build/Scripts/styleguide.esm.js')) {
                     return GeneralUtility::getUrl(
                         GeneralUtility::getFileAbsFileName(
@@ -163,7 +163,7 @@ class StencilViewHelperTest extends FunctionalTestCase
         ]);
 
         $serverRequest->expects($this->atLeastOnce())->method('getAttribute')->willReturnCallback(
-            static fn($key): Site|int => match ($key) {
+            static fn(string $key): Site|int => match ($key) {
                 'applicationType' => SystemEnvironmentBuilder::REQUESTTYPE_FE,
                 'site' => $site,
             },
@@ -176,7 +176,7 @@ class StencilViewHelperTest extends FunctionalTestCase
         $subject
             ->expects($this->once())
             ->method('getUrl')
-            ->willReturnCallback(static function ($url): string|false|null {
+            ->willReturnCallback(static function (string $url): string|false|null {
                 if (str_contains($url, 'Build/Scripts/styleguide.esm.js')) {
                     return GeneralUtility::getUrl(
                         GeneralUtility::getFileAbsFileName(

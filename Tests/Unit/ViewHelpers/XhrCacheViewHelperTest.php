@@ -12,7 +12,7 @@ use TYPO3\CMS\Extbase\Persistence\QueryResultInterface;
 use TYPO3\TestingFramework\Core\Unit\UnitTestCase;
 use TYPO3Fluid\Fluid\Core\Rendering\RenderingContext;
 
-class XhrCacheViewHelperTest extends UnitTestCase
+final class XhrCacheViewHelperTest extends UnitTestCase
 {
     #[Test]
     public function initializeArguments_should_registerArguments(): void
@@ -26,10 +26,12 @@ class XhrCacheViewHelperTest extends UnitTestCase
             ->expects($this->exactly(2))
             ->method('registerArgument')
             ->willReturnCallback(
-                static fn($name, $type, $description, $required): null => match (true) {
-                    $name === 'url' && $type === 'string' && $description === '' && $required === false => null,
-                    $name === 'content' && $type === 'mixed' && $description === '' && $required === true => null,
-                    default => throw new LogicException(),
+                static function ($name, $type, $description, $required) use ($subject) {
+                    return match (true) {
+                        $name === 'url' && $type === 'string' && $description === '' && $required === false => $subject,
+                        $name === 'content' && $type === 'mixed' && $description === '' && $required === true => $subject,
+                        default => throw new LogicException(),
+                    };
                 },
             );
 
@@ -42,7 +44,7 @@ class XhrCacheViewHelperTest extends UnitTestCase
         $subject = $this->getSubject();
         $result = $subject->initializeArgumentsAndRender();
 
-        $this->assertStringContainsString('url: window.location.href', $result);
+        $this->assertStringContainsString('url: window.location.href', (string) $result);
     }
 
     #[Test]
@@ -51,7 +53,7 @@ class XhrCacheViewHelperTest extends UnitTestCase
         $subject = $this->getSubject();
         $result = $subject->initializeArgumentsAndRender();
 
-        $this->assertStringContainsString('data: null', $result);
+        $this->assertStringContainsString('data: null', (string) $result);
     }
 
     #[Test]
@@ -63,7 +65,7 @@ class XhrCacheViewHelperTest extends UnitTestCase
         ]);
         $result = $subject->initializeArgumentsAndRender();
 
-        $this->assertStringContainsString('data: 42', $result);
+        $this->assertStringContainsString('data: 42', (string) $result);
     }
 
     #[Test]
@@ -79,7 +81,7 @@ class XhrCacheViewHelperTest extends UnitTestCase
         ]);
         $result = $subject->initializeArgumentsAndRender();
 
-        $this->assertStringContainsString('data: [["1"],["2"]]', $result);
+        $this->assertStringContainsString('data: [["1"],["2"]]', (string) $result);
     }
 
     private function getSubject(): XhrCacheViewHelper
