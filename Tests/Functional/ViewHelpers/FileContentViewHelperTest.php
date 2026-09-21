@@ -9,7 +9,7 @@ use Netlogix\Nxstyleguide\ViewHelpers\FileContentViewHelper;
 use PHPUnit\Framework\Attributes\Test;
 use TYPO3\TestingFramework\Core\Functional\FunctionalTestCase;
 
-class FileContentViewHelperTest extends FunctionalTestCase
+final class FileContentViewHelperTest extends FunctionalTestCase
 {
     protected array $testExtensionsToLoad = [
         'typo3conf/ext/nxstyleguide/Tests/Functional/Fixtures/Extensions/nxwebsite',
