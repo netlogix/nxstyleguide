@@ -67,7 +67,7 @@ class FileContentViewHelper extends AbstractViewHelper
                             $fileUri = PathUtility::getAbsoluteWebPath(
                                 GeneralUtility::getFileAbsFileName($this->arguments['file']),
                             );
-                            $fileUri = (string) (new Uri('/' . rtrim($fileUri, '/')))
+                            $fileUri = (string) new Uri('/' . rtrim($fileUri, '/'))
                                 ->withScheme('https')
                                 ->withHost($_SERVER['CDN_BASE'] ?? $_SERVER['HTTP_HOST']);
 

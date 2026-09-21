@@ -146,7 +146,7 @@ class StencilViewHelper extends AbstractTagBasedViewHelper
 
         $baseUri = $this->getBaseUri();
 
-        return (string) (new Uri($file))->withScheme('https')->withHost($baseUri->getHost());
+        return (string) new Uri($file)->withScheme('https')->withHost($baseUri->getHost());
     }
 
     public function getBaseUri(): UriInterface
