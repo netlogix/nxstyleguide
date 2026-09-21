@@ -86,7 +86,7 @@ class PictureViewHelper extends AbstractTagBasedViewHelper
                 );
             } else {
                 $image = $this->getImageByPageData($this->arguments['pageData']);
-                if (!$image instanceof FileReference) {
+                if (!($image instanceof FileReference)) {
                     return '';
                 }
             }
@@ -275,7 +275,7 @@ class PictureViewHelper extends AbstractTagBasedViewHelper
             return false;
         }
 
-        if (!$routing instanceof PageArguments) {
+        if (!($routing instanceof PageArguments)) {
             return false;
         }
 
