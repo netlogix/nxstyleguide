@@ -33,7 +33,7 @@ class GuzzleClientWithTimeoutFactory
             $httpOptions['handler'] = $stack;
         }
 
-        $httpOptions['timeout'] = getenv('SSR_SUB_REQUEST_TIMEOUT') ?: 15;
+        $httpOptions['timeout'] = (int) (getenv('SSR_SUB_REQUEST_TIMEOUT') ?: 15);
 
         return new Client($httpOptions);
     }
