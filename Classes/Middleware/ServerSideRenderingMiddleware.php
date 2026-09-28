@@ -6,6 +6,7 @@ namespace Netlogix\Nxstyleguide\Middleware;
 
 use Exception;
 use GuzzleHttp\Exception\ConnectException;
+use GuzzleHttp\Exception\NetworkTimeoutException;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
@@ -64,7 +65,11 @@ readonly class ServerSideRenderingMiddleware implements MiddlewareInterface
 
             return $res->getStatusCode() === 200 ? $response->withBody($res->getBody()) : $response;
         } catch (Exception $exception) {
-            if (function_exists('\Sentry\captureException') && !($exception instanceof ConnectException)) {
+            if (
+                function_exists('\Sentry\captureException') &&
+                !($exception instanceof ConnectException) &&
+                !($exception instanceof NetworkTimeoutException)
+            ) {
                 captureException($exception);
             }
 
