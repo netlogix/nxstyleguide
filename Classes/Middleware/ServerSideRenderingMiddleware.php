@@ -5,9 +5,8 @@ declare(strict_types=1);
 namespace Netlogix\Nxstyleguide\Middleware;
 
 use Exception;
-use GuzzleHttp\Exception\ConnectException;
-use GuzzleHttp\Exception\NetworkTimeoutException;
 use Psr\Http\Client\ClientInterface;
+use Psr\Http\Client\NetworkExceptionInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -63,20 +62,20 @@ readonly class ServerSideRenderingMiddleware implements MiddlewareInterface
         try {
             $res = $this->client->sendRequest($req);
 
-            return $res->getStatusCode() === 200 ? $response->withBody($res->getBody()) : $response;
+            if ($res->getStatusCode() === 200) {
+                return $response->withBody($res->getBody());
+            }
         } catch (Exception $exception) {
-            if (
-                function_exists('\Sentry\captureException') &&
-                !($exception instanceof ConnectException) &&
-                !($exception instanceof NetworkTimeoutException)
-            ) {
+            // connection errors, timeouts and resets are expected while the ssr server is busy or restarting
+            if (function_exists('\Sentry\captureException') && !($exception instanceof NetworkExceptionInterface)) {
                 captureException($exception);
             }
-
-            return $response;
         } finally {
             $this->timeTracker->pull();
         }
+
+        // the page without ssr markup must not end up in a shared cache
+        return $response->withHeader('Cache-Control', 'private, no-store');
     }
 
     private function getLabels(): array
