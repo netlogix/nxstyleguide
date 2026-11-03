@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Netlogix\Nxstyleguide\Middleware;
 
 use Exception;
+use GuzzleHttp\Exception\ResponseTransferException;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Client\NetworkExceptionInterface;
 use Psr\Http\Message\RequestFactoryInterface;
@@ -66,8 +67,13 @@ readonly class ServerSideRenderingMiddleware implements MiddlewareInterface
                 return $response->withBody($res->getBody());
             }
         } catch (Exception $exception) {
-            // connection errors, timeouts and resets are expected while the ssr server is busy or restarting
-            if (function_exists('\Sentry\captureException') && !($exception instanceof NetworkExceptionInterface)) {
+            // connection errors, timeouts and resets are expected while the ssr server is busy or restarting,
+            // also after the response headers were already received
+            if (
+                function_exists('\Sentry\captureException') &&
+                !($exception instanceof NetworkExceptionInterface) &&
+                !($exception instanceof ResponseTransferException)
+            ) {
                 captureException($exception);
             }
         } finally {
