@@ -62,17 +62,20 @@ readonly class ServerSideRenderingMiddleware implements MiddlewareInterface
         try {
             $res = $this->client->sendRequest($req);
 
-            return $res->getStatusCode() === 200 ? $response->withBody($res->getBody()) : $response;
+            if ($res->getStatusCode() === 200) {
+                return $response->withBody($res->getBody());
+            }
         } catch (Exception $exception) {
             // connection errors, timeouts and resets are expected while the ssr server is busy or restarting
             if (function_exists('\Sentry\captureException') && !($exception instanceof NetworkExceptionInterface)) {
                 captureException($exception);
             }
-
-            return $response;
         } finally {
             $this->timeTracker->pull();
         }
+
+        // the page without ssr markup must not end up in a shared cache
+        return $response->withHeader('Cache-Control', 'private, no-store');
     }
 
     private function getLabels(): array
